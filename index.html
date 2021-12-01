@@ -128,8 +128,8 @@ i {
 <div class="topnav" id="myTopnav">
 	<a id="load">Load</a>
 	<a id="clear">Clear</a>
-	<div class="dropdown">
-		<button class="dropbtn">Chart</button>
+	<div class="dropdown" >
+		<button class="dropbtn" id="chart">Chart</button>
 		<div class="dropdown-content" id="chart_menu_id"></div>
 	</div> 
 
@@ -217,6 +217,10 @@ i {
 	document.getElementById('clear').onclick = function(){
 		removeAllCharts();
 		updateChartMenu();
+	}
+	
+	document.getElementById('chart').onclick = function(){
+		document.getElementById("chart_menu_id").style.display = "block";
 	}
 
 	function removeAllCharts() {
