@@ -279,6 +279,7 @@ i {
 
 	function onSelectChart(i) { 
 		var result = Module.ccall('SetActiveChart', 'number', ['number'], [i]);
+		document.getElementById("chart_menu_id").style.display = "none";
 	}
 	
 	function removeAllChildren(element) {
