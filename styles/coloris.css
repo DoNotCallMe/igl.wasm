@@ -2,7 +2,7 @@
   display: none;
   flex-wrap: wrap;
   position: absolute;
-  width: 200px;
+  width: 250px;
   z-index: 1000;
   border-radius: 10px;
   background-color: #fff;
@@ -134,14 +134,16 @@
   order: 1;
   width: calc(100% - 40px);
   margin: 0 20px 20px;
+  padding: 5px;
 }
 
 .clr-segmented {
   display: flex;
+  justify-content: center;
   position: relative;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 10px;
   border: 1px solid #ddd;
   border-radius: 15px;
   box-sizing: border-box;
@@ -178,7 +180,8 @@
   border-radius: 0 10px 10px 0;
 }
 
-.clr-segmented input:checked + label {
+.clr-segmented input:checked,
+.clr-segmented label:checked {
   color: #fff;
   background-color: #666;
 }
@@ -187,16 +190,13 @@
   order: 2;
   width: calc(100% - 32px);
   margin: 0 16px;
-}
-
-.clr-swatches div {
   display: flex;
   flex-wrap: wrap;
   padding-bottom: 12px;
   justify-content: center;
 }
 
-.clr-swatches button {
+.clr-swatch {
   position: relative;
   width: 20px;
   height: 20px;
@@ -210,7 +210,7 @@
   cursor: pointer;
 }
 
-.clr-swatches button:after {
+.clr-swatch:after {
   content: '';
   display: block;
   position: absolute;

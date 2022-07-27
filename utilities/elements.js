@@ -1,37 +1,125 @@
 
-class Control {
-   /**
-   * Shortcut for getElementById to optimize the minified JS.
-   * @param {string} id The element id.
-   * @return {object} The DOM element with the provided id.
-   */
-    static getEl(id) {
-        return document.getElementById(id);
+function getID()
+{
+    return "IGL" + (Control.ID++).toString();
+}
+
+class Component {
+
+    // element id generation
+    static ID = 0;
+    static getID()
+    {
+        return "IGL" + (Control.ID++).toString();
     }
 
-    createElement(){
+    #classList = [];
+    getClassList(){
+        return classList;
+    }
+
+    addClass(new_class)
+    {
+        let index = classList.indexOf(new_class);
+        if (index == -1){
+            classList.add(new_class);
+            onClassChanged();
+        }
+    }
+
+    removeClass(new_class)
+    {
+        let index = classList.indexOf(new_class);
+        if (index != -1){
+            classList.remove(new_class);
+            onClassChanged();
+        }
+    }
+
+    #onClassChanged()
+    {
+        for (const id of ids){
+            element = document.getElementById(id);
+            element.classList = this.getClassList();
+        }
+    }
+
+    onValueChanged()
+    {
+        for (const id of ids){
+            element = document.getElementById(id);
+            applyValue(element);
+        }
+    }
+
+
+    #ids = [];
+    registerID(id) {
+        let index = ids.indexOf(id);
+        if (index != -1){
+            ids.add(id);
+        }
+    }
+
+    unregisterID(id) {
+        ids.remove(id);
+    }
+
+    createElementRoutine(){
         element = document.createElement('div');
         return element;
     }
 
-    onAppendElement()
-    {
-
+    createElement(){
+        element = this.createElementRoutine();
+        element.id = getID();
+        this.registerID(element.id);
+        element.classList = this.getClassList();           
+        return element;
     }
 
-    render(){
-        element = this.createElement();
-
-        // Append the color picker to the DOM
-        document.body.appendChild(element);
-        this.onAppendElement();
+    render(properties){
+        element = createElement();
+        prporties.parent.appendChild(element);
+        onAppendControl(element.id);
     }
 
+    onAppendControl(id){
+
+    }    
 }
 
-class ColorPicker {
-    #color = 0;
+class ColorPicker extends Component
+{
+    #color = '#000000';
 
+    setColor(new_color){
+        if (new_color != getColor()){
+            color = new_color;
+            onValueChanged();
+        }
+    }
+
+    getColor() {
+        return this.color;
+    }
+
+    applyValue(element) {
+        element.Value = getColor();
+    }
+
+
+    createElementRoutine(){
+        input = document.createElement('input');
+        input.type = "text";
+        return input;
+    }
+
+    onAppendControl(id){
+
+    }
+
+/*
     // Default settings
     settings = {
         el: '[data-coloris]',
@@ -222,5 +310,5 @@ class ColorPicker {
         addListener(colorArea, 'click', moveMarker);
         addListener(hueSlider, 'input', setHue);
         addListener(alphaSlider, 'input', setAlpha);
-    }
+    }*/
 }
