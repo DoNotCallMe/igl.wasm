@@ -2,11 +2,19 @@
 <html>
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+
 	<link rel="stylesheet" href="styles/styles.css">
+
 	<link rel="stylesheet" href="styles/utils.css">
-	<link rel="stylesheet" href="styles/coloris.css">
+	<link rel="stylesheet" href="styles/colorDialog.css">
+	<link rel="stylesheet" href="styles/tooltip.css">
+	<link rel="stylesheet" href="styles/messageBox.css">	
+	
 	<script type="text/javascript" src="utilities/utils.js"></script>
-	<script type="text/javascript" src="utilities/coloris.js"></script>
+	<script type="text/javascript" src="utilities/colorDialog.js"></script>
+	<script type="text/javascript" src="utilities/tooltip.js"></script>
+	<script type="text/javascript" src="utilities/messageBox.js"></script>	
+
 	<title>Ideal Dashboard</title>
 	<link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
@@ -59,7 +67,7 @@
 				loadData(data, 1);
 			},
 			canvas: (function () {
-				var canvas = document.getElementById('canvas');
+				var canvas = document.getElementById("canvas");
 				return canvas;
 			})()
 		};
@@ -182,56 +190,6 @@
 				element.removeChild(element.firstChild)
 			}
 		}
-
-        Coloris({
-            el: '.coloris',
-            theme: 'large',
-            themeMode: 'light',
-            format: 'rgb',
-            parent: null,
-            wrap: true,
-            formatToggle: true,
-            margin: 2,
-            swatchesOnly: false,
-            alpha: true,
-            focusInput: true,
-            selectInput: false,
-            autoClose: false,
-            inline: false,
-            defaultColor: '#000000',
-
-            clearButton: {
-                show: false,
-                label: 'Clear'
-			},
-
-            swatches: [
-                '#264653',
-                '#2a9d8f',
-                '#e9c46a',
-                '#f4a261',
-                '#e76f51',
-                '#d62828',
-                '#023e8a',
-                '#0077b6',
-                '#0096c7',
-                '#00b4d8',
-                '#48cae4'
-            ],
-
-            a11y: {
-                open: 'Open color picker',
-                close: 'Close color picker',
-                marker: 'Saturation: {s}. Brightness: {v}.',
-                hueSlider: 'Hue slider',
-                alphaSlider: 'Opacity slider',
-                input: 'Color value field',
-                format: 'Color format',
-                swatch: 'Color swatch',
-                instruction: 'Saturation and brightness selector. Use up, down, left and right arrow keys to select.'
-            }		
-        });
-
 	</script>
 	
 </body>
