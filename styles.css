@@ -33,7 +33,6 @@ html, body {
 .chartContainer {
 	width: 600px;
 	height: 450px;
-	border: 1px solid #000;
 	resize: both;
 	box-sizing: border-box;
 	background: white;
