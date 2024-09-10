@@ -168,13 +168,8 @@ class CModalDialog extends CWindow
 
                 this.close_button = document.createElement('button');
                 this.close_button.className = 'button-close';
+				this.close_button.textContent = '\u00D7'; // Unicode for multiplication sign (×)
 
-                /*{
-                    var image = document.createElement('img');
-                    image.className = 'button-close-image';
-                    image.src = "images/close_icon.svg";
-                    button.appendChild(image);
-                }*/
                 titlebar.appendChild(this.close_button);
             }
 
@@ -1445,15 +1440,20 @@ class ContextMenu {
         label.innerText = data.hasOwnProperty('text') ? data.text.toString() : '';
         item.appendChild(label);
 
+
+		const is_submenu = data.hasOwnProperty('subitems') && Array.isArray(data.subitems) && data.subitems.length > 0
+
         if (data.hasOwnProperty('disabled') && data.disabled) {
             item.classList.add('disabled');
         } else {
             item.classList.add('enabled');
+			
+			if (data.hasOwnProperty('default') && data.default) {
+				item.classList.add('default');
+			}
         }
 		
-		if (data.hasOwnProperty('default') && data.default) {
-            item.classList.add('default');
-        }
+		
 
         const hotkey = document.createElement('span');
         hotkey.classList.add('hotkey');
@@ -1615,7 +1615,7 @@ class ContextMenu {
     show(x, y, show_overlay) {
         var menu = this.getMenuDom();
         
-        menu.style.left = `${x}px`;
+		menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
         	
 		this.dom = menu;
@@ -1645,8 +1645,26 @@ class ContextMenu {
 		this.shown = true;		
 		
         this.container.appendChild(this.main_dom);
-		
-		
+				
+		//update position is context menu is out of visible area
+		var margin = 0;
+		var menuWidth = menu.offsetWidth;
+		var menuHeight = menu.offsetHeight;
+		var left = x + margin;
+		var top = y + margin;    
+		if (left + menuWidth > document.documentElement.clientWidth) {
+			left = x - menuWidth - margin ;
+		}
+		if (left < 0) {
+			left = margin;
+		}
+		if (top + menuHeight > document.documentElement.clientHeight) {
+			top = y - menuHeight - margin;
+		}
+		if (top < 0) {
+			top = margin;
+		}
+		menu.setAttribute('style', 'top:' + top + 'px;' + 'left:' + left + 'px;');		
     }
 
     install() {
@@ -2361,13 +2379,13 @@ function showTooltip(x, y, text) {
         left = x - tooltipWidth - margin ;
     }
     if (left < 0) {
-        left = x + margin;
+        left = margin;
     }
     if (top + tooltipHeight > document.documentElement.clientHeight) {
         top = y - tooltipHeight - margin;
     }
     if (top < 0) {
-        top = y + margin;
+        top = margin;
     }
 
     tooltipWrap.setAttribute('style', 'top:' + top + 'px;' + 'left:' + left + 'px;');

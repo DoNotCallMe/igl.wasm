@@ -36,8 +36,9 @@ html, body {
 	border: 1px solid #000;
 	resize: both;
 	box-sizing: border-box;
+	background: white;
 	overflow: hidden;
-	padding: 4px;
+	padding: 7px;
 	margin: 20px;
 }
 

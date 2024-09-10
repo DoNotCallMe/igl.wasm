@@ -450,6 +450,7 @@
 	color: #505050;
     float: right;
 	vertical-align: middle;
+	padding-left: 5px;
 } 
 html, body {
     margin: 0;
@@ -544,12 +545,9 @@ html, body {
 }
 
 .button-close {
-    -webkit-mask-size: cover;
-    mask-size: cover;
-    -webkit-mask-image: url(..\\images\\close_icon.svg);
-    mask-image: url(..\\images\\close_icon.svg);
-    background-color: white;
-    background-size: contain;
+    font-size: 24px; /* Adjust size as needed */
+    color: white; /* Adjust color as needed */
+    background: none;
     cursor: pointer;
     display: inline-block;
     height: 20px;
@@ -558,6 +556,8 @@ html, body {
     border: none;
     cursor: pointer;
     padding: 0px;
+    vertical-align: middle;
+    text-align: center; /* Corrected property */
 }
 
 .button-close:hover {
