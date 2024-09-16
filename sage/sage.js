@@ -1,5 +1,5 @@
 function getModuleWnd() {
-    element = document.getElementById('canvas');
+    element = document.getElementById('SAGE_mainCanvas');
     return element;
 }
 
@@ -1740,38 +1740,36 @@ function createContainerWithCanvas(containerId, canvasId) {
     // Create the canvas element
     var global_canvas = document.createElement('canvas');
     global_canvas.id = canvasId;
-    //global_canvas.setAttribute('oncontextmenu', onCanvasContextMenu);
-
+    
     // Append the canvas to the container
     container.appendChild(global_canvas);
 	
-	var loader = document.createElement('div');
-    loader.id = 'loader';
-    loader.classList.add('hidden');
+	//var loader = document.createElement('div');
+    //loader.id = 'loader';
+    //loader.classList.add('hidden');
 	
 	// Append the loader to the container
-    container.appendChild(loader);
+    //container.appendChild(loader);
 
     // Append the container to the document body
-    document.body.appendChild(container);
+	document.body.appendChild(container);
+	/*if (document.body.firstChild) {
+		document.body.insertBefore(container, document.body.firstChild);
+	} else {
+		document.body.appendChild(container);
+	}*/
 
     console.log('Container and canvas added successfully.');
 }
-
-//function onCanvasContextMenu(e)
-//{
-//	e.preventDefault();
-//    e.stopPropagation();
-//}
 	
 function createTextCanvas(canvasId) {
 
     // Create the canvas element
-    var global_canvas = document.createElement('canvas');
-    global_canvas.id = canvasId;
+    var new_canvas = document.createElement('canvas');
+	new_canvas.id = canvasId;
 
     // Append the container to the document body
-    document.body.appendChild(global_canvas);
+	document.body.appendChild(new_canvas);
 
     console.log('Text canvas added successfully.');
 }
@@ -1797,31 +1795,39 @@ function handleCanvasResize(entries) {
 // Function to handle mouse leave event on chart box
 function handleMouseMove(event) {
 
-	// Get all elements with the "igl_chart" class	`
-	const chartBoxes = document.querySelectorAll('.igl_chart');
+	// Get all elements with the "SAGE_chart" class	`
+	const chartBoxes = document.querySelectorAll('.SAGE_chart');
 
-	// Check if the cursor is outside of any chart box
-	const isCursorOutsideChartBox = Array.from(chartBoxes).every(chartBox => {
+	// Check if the cursor is inside of any chart box
+	let isCursorInsideChartBox = false;
+
+	for (const chartBox of chartBoxes) {
 		const rect = chartBox.getBoundingClientRect();
-		return (
-			event.clientX < rect.left ||
-			event.clientX > rect.right ||
-			event.clientY < rect.top ||
-			event.clientY > rect.bottom
-		);
-	});
-	
+		if (event.clientX >= rect.left && event.clientX <= rect.right &&
+			event.clientY >= rect.top && event.clientY <= rect.bottom) {
+			isCursorInsideChartBox = true;
+			break;
+		}
+	}
+
 	// Use querySelector to find the first element with the class 'modal-overlay'
 	var modalOverlay = document.querySelector('.modal-overlay');
 	
-	let mouseMustBeHandledByWASM = !modalOverlay && (!isCursorOutsideChartBox || mouseCaptureChartBox);
-	
+	let mouseMustBeHandledByWASM = !modalOverlay && (isCursorInsideChartBox || mouseCaptureChartBox);
+
+
+	console.log('Test mouse position: ' + mouseMustBeHandledByWASM);
+
 	if (mouseIsCanvasHandled != mouseMustBeHandledByWASM) {
 		mouseIsCanvasHandled = mouseMustBeHandledByWASM;
-		
-		const global_canvas = document.getElementById('canvas');
+
+
+		const global_canvas = getModuleWnd();
 		
 		if (mouseIsCanvasHandled) {
+
+			console.log('Enter chart window');
+
 			// Set pointer-events to none when mouse enters the chart box
 			chartBoxes.forEach(chartBox => {
 				chartBox.style.pointerEvents = 'none';
@@ -1834,6 +1840,9 @@ function handleMouseMove(event) {
 			}
 		}
 		else {
+
+			console.log('Leave chart window');
+
 			// Reset pointer-events when mouse leaves the chart box			
 			chartBoxes.forEach(chartBox => {
 				chartBox.style.pointerEvents = 'auto';
@@ -1851,24 +1860,25 @@ function handleMouseMove(event) {
 // Function to handle mouse leave event on chart box
 function blockDefaultInsideChart(event) {
 
-	// Get all elements with the "igl_chart" class	`
-	const chartBoxes = document.querySelectorAll('.igl_chart');
+	// Get all elements with the "SAGE_chart" class	`
+	const chartBoxes = document.querySelectorAll('.SAGE_chart');
 
-	// Check if the cursor is outside of any chart box
-	const isCursorOutsideChartBox = Array.from(chartBoxes).every(chartBox => {
+	// Check if the cursor is inside of any chart box
+	let isCursorInsideChartBox = false;
+
+	for (const chartBox of chartBoxes) {
 		const rect = chartBox.getBoundingClientRect();
-		return (
-			event.clientX < rect.left ||
-			event.clientX > rect.right ||
-			event.clientY < rect.top ||
-			event.clientY > rect.bottom
-		);
-	});
+		if (event.clientX >= rect.left && event.clientX <= rect.right &&
+			event.clientY >= rect.top && event.clientY <= rect.bottom) {
+			isCursorInsideChartBox = true;
+			break;
+		}
+	}
 
 	// Use querySelector to find the first element with the class 'modal-overlay'
 	var modalOverlay = document.querySelector('.modal-overlay');
 	
-	if (modalOverlay || !isCursorOutsideChartBox) {
+	if (modalOverlay || isCursorInsideChartBox) {
 		event.preventDefault();		
 	}
 }
@@ -1876,8 +1886,8 @@ function blockDefaultInsideChart(event) {
 function handleMouseDown(event) {
 	if (event.button === 0) {
 		// Left mouse button is pressed inside the chart box
-		mouseCaptureChartBox = true;
-		handleMouseMove(event);
+		//mouseCaptureChartBox = true;
+		//handleMouseMove(event);
 	}
 }
 
@@ -1890,7 +1900,7 @@ function handleMouseUp(event) {
 	}
 }
 
-// Function to handle resizing of "igl_chart" elements
+// Function to handle resizing of "SAGE_chart" elements
 function handleChartBoxResize(entries) {
 	entries.forEach(entry => {
 	const target = entry.target;
@@ -2043,13 +2053,12 @@ function initializeTextDialog() {
 	
 document.addEventListener("DOMContentLoaded", function() {
     
-	createContainerWithCanvas('igl_canvasGlobalContainer', 'canvas');
-	createTextCanvas('textCanvas');
-	
-	initializeTextDialog();
+	createContainerWithCanvas('SAGE_canvasGlobalContainer', 'SAGE_mainCanvas');
+	createTextCanvas('SAGE_textCanvas');
+	//initializeTextDialog();
 		
     {//subscribe to canvas resizing here
-		const canvas_container = document.getElementById('igl_canvasGlobalContainer');
+		const canvas_container = document.getElementById('SAGE_canvasGlobalContainer');
 		// Create a ResizeObserver
 		const resizeObserver = new ResizeObserver(handleCanvasResize);
 		// Observe the canvas element
@@ -2057,23 +2066,23 @@ document.addEventListener("DOMContentLoaded", function() {
 	}
 		
 	{//subscribe to all mouse actions here
-		const global_canvas = document.getElementById('canvas');
+		const global_canvas = getModuleWnd();
 		global_canvas.addEventListener('mousemove', handleMouseMove);
 		global_canvas.addEventListener('mousedown', handleMouseDown);
-		global_canvas.addEventListener('mouseup', handleMouseUp);
-		global_canvas.addEventListener('wheel', blockDefaultInsideChart);
-		global_canvas.addEventListener('contextmenu', blockDefaultInsideChart);
+		//global_canvas.addEventListener('mouseup', handleMouseUp);
+		global_canvas.addEventListener('wheel', blockDefaultInsideChart);//, { passive: false });
+		global_canvas.addEventListener('contextmenu', blockDefaultInsideChart);//, { passive: false });
 	
-		// Get all elements with the "igl_chart" class
-		const chartBoxes = document.querySelectorAll('.igl_chart');
+		// Get all elements with the "SAGE_chart" class
+		const chartBoxes = document.querySelectorAll('.SAGE_chart');
 		
-		// Create a ResizeObserver for each "igl_chart" element
+		// Create a ResizeObserver for each "SAGE_chart" element
 		chartBoxes.forEach(chartBox => {
 			const chartBoxObserver = new ResizeObserver(handleChartBoxResize);
 			chartBoxObserver.observe(chartBox);
 			
 			chartBox.addEventListener('mousemove', handleMouseMove);
-			//chartBox.addEventListener('mousedown', handleMouseDown);
+			chartBox.addEventListener('mousedown', handleMouseDown);
 			//chartBox.addEventListener('mouseup', handleMouseUp);
 		});
 	}
@@ -2087,16 +2096,9 @@ var Module = {
 		console.log('WASM module was initialized');
 		Module.doNotCaptureKeyboard = true;
 	},
-	//canvasWidth: global_canvas.width,
-	//canvasHeight: global_canvas.height,
-	//canvas: (function () {
-	//	const global_canvas = document.getElementById('canvas');
-	//	return global_canvas;
-	//})()
 	
 	canvas: (function() {
-		const global_canvas = document.getElementById('canvas');
-        return global_canvas;
+		return getModuleWnd();
 	})(),
             // Disable keyboard capturing
     dontCaptureKeyboard: true
@@ -2203,12 +2205,12 @@ function createOffscreenCanvas(width, height) {
 function updateCanvasHDPI() {
 	const pixelRatio = window.devicePixelRatio || 1;
 
-	const canvas_container = document.getElementById('igl_canvasGlobalContainer');
+	const canvas_container = document.getElementById('SAGE_canvasGlobalContainer');
 
 	const newWidth = Math.floor(canvas_container.offsetWidth * pixelRatio);
 	const newHeight = Math.floor(canvas_container.offsetHeight * pixelRatio);
 	
-	const global_canvas = document.getElementById('canvas');
+	const global_canvas = getModuleWnd();
 	
 	global_canvas.width = newWidth;
 	global_canvas.height = newHeight;
