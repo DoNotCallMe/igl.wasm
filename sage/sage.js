@@ -1352,6 +1352,8 @@ class ContextMenu {
         this.items = items;
 		this.id = id;
 
+        console.log("JS ContextMenu class was created - " + this.id);
+
         this._onclick = e => {
             if (this.dom && e.target != this.dom && 
 				//this.main_dom && e.target != this.main_dom && 
@@ -1461,7 +1463,7 @@ class ContextMenu {
         item.appendChild(hotkey);
 
         if (data.hasOwnProperty('subitems') && Array.isArray(data.subitems) && data.subitems.length > 0) {
-            const menu = new ContextMenu(this.container, data.subitems);
+            const menu = new ContextMenu(this.container, data.subitems, this.id);
             menu.root = false;
             menu.parent = this;
 
@@ -1708,7 +1710,8 @@ function openContextMenu(id, xy, jsonData){
 	{
 		try {
 			const menuObject = JSON.parse(jsonData);
-			console.log(menuObject);
+            console.log(menuObject);
+            console.log("ID" + id);
 		
 			if (Object.keys(menuObject).length != 0) {
 				
