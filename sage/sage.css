@@ -375,7 +375,7 @@
     left: 0px;
     min-width: 100px;
     font-family: arial;
-    font-size: 12;
+    font-size: 12px;
     color: #fff;
     background: #292A2D;
     border: 1px solid #333333;
@@ -455,7 +455,7 @@
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 12;
+    font-size: 12px;
 }
 
 #SAGE_canvasGlobalContainer {
@@ -497,7 +497,6 @@ body {
 	border-radius: 10px;
     padding: 10px 10px;
     font-family: arial;
-    font-size: 12;
     color: gray;
     border: 1px solid gray;
 	z-index: 100;
@@ -525,12 +524,6 @@ body {
     
     box-shadow: 0 0 5px rgba(0,0,0,.25), 0 5px 20px rgba(0,0,0,.1);
     background: #ffffff;
-
-    /*max-width: 500px;
-    background: #ffffff;
-    border: 1px solid #ffffff;
-    font-size: 16px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.25);*/
 }
 
 .modal-titlebar {
