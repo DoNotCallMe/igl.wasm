@@ -1252,7 +1252,9 @@ class CColorPicker extends CWindow
             currentEl.dispatchEvent(new Event('input', { bubbles: true }));
         }*/
 
-        this.getElement().dispatchEvent(new CustomEvent('color:pick', { detail: { color: newColor } }));
+        if (this.picker) {
+            this.picker.dispatchEvent(new CustomEvent('color:pick', { detail: { color: newColor } }));
+        }
     }
 
     //Set the active color based on a specific point in the color gradient.
@@ -1765,7 +1767,7 @@ function createContainerWithCanvas(containerId, canvasId) {
     console.log('Container and canvas added successfully.');
 }
 	
-function createTextCanvas(canvasId) {
+function createOffscreenCanvas(canvasId) {
 
     // Create the canvas element
     var new_canvas = document.createElement('canvas');
@@ -1774,7 +1776,7 @@ function createTextCanvas(canvasId) {
     // Append the container to the document body
 	document.body.appendChild(new_canvas);
 
-    console.log('Text canvas added successfully.');
+    console.log('Offscreen canvas was added successfully.');
 }
 
 function initIdealGraphics() {	
@@ -2057,7 +2059,8 @@ function initializeTextDialog() {
 document.addEventListener("DOMContentLoaded", function() {
     
 	createContainerWithCanvas('SAGE_canvasGlobalContainer', 'SAGE_mainCanvas');
-	createTextCanvas('SAGE_textCanvas');
+	createOffscreenCanvas('SAGE_textCanvas');
+	createOffscreenCanvas('SAGE_tooltipCanvas');
 	//initializeTextDialog();
 		
     {//subscribe to canvas resizing here
@@ -2199,12 +2202,6 @@ async function setClipboardText(text) {
 // Expose the function to the Emscripten module
 Module['setClipboardText'] = setClipboardText;
 //---------------------------------------------------------------------------------------
-	
-function createOffscreenCanvas(width, height) {
-    const offscreenCanvas = new OffscreenCanvas(width, height);
-    return offscreenCanvas;
-}
-
 function updateCanvasHDPI() {
 	const pixelRatio = window.devicePixelRatio || 1;
 

@@ -469,7 +469,7 @@ body {
     pointer-events: none; /* Allows events to pass through */
 }
 
-#SAGE_canvas {
+#SAGE_mainCanvas {
     top: 0;
     left: 0;
     width: 100%;
@@ -477,6 +477,24 @@ body {
     background: rgba(255, 255, 255, 0);
     /*zIndex: -1;*/
     pointer-events: none; /* Allows events to pass through */
+}
+
+#SAGE_textCanvas {
+    top: 0;
+    left: 0;
+    width: 256px;
+    height: 256px;
+    position: absolute; /* Position it absolutely */
+    visibility: hidden; /* Hide it from view */
+}
+
+#SAGE_tooltipCanvas {
+    width: 64px;
+    height: 64px;
+    /*zIndex: 100;*/
+    position: absolute; /* Position it absolutely */
+    visibility: hidden; /* Hide it from view */
+    /*border: 3px solid green;*/
 }
 
 #SAGE_textDialog {
