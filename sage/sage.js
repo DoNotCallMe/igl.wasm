@@ -2344,15 +2344,9 @@ function loadSAGEContent() {
 }
 
 function sendReq(site, machine, section) {
-	var http;
-	var browser = navigator.appName;
-	if (browser == "Microsoft Internet Explorer") {
-		http = new ActiveXObject("Microsoft.XMLHTTP");
-	} else {
-		http = new XMLHttpRequest();
-	}
+	var http = new XMLHttpRequest();
 	var page = window.location.pathname;
-	var req = 'https://odesa.intel.com/counter.asp?Action=pagehit&Machine=' + machine + '&Site=' + site + '&Section=' + section + '&Page=' + page
+	var req = 'https://ideal.intel.com/counter.asp?Action=pagehit&Machine=' + machine + '&Site=' + site + '&Section=' + section + '&Page=' + page
 	http.open('get', req);
 	http.send(null);
 }
