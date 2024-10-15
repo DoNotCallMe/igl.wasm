@@ -1,0 +1,112 @@
+body {
+    background-color: lightgrey !important;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.container {
+    display: flex;
+    height: 100%;
+    padding: 10px;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.button-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 40px; /* Allocate space for the button column */
+}
+
+.button-column button {
+    border: 1px solid gray;
+    background-color: white;
+    color: white;
+    border-radius: 20%; /* Make the button round */
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    background-size: 60%; /* Adjust the size of the background image */
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#overlayButton {
+    background-image: url('overlay.svg');
+}
+
+#tableButton {
+    background-image: url('table.svg');
+}
+
+#canvasButton {
+    background-image: url('canvas.svg');
+}
+
+.editor-holder, .chart-holder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid black;
+    background-color: white;
+    box-sizing: border-box;
+    overflow: hidden; /* Ensure content does not overflow */
+}
+
+.chart-holder {
+    padding: 5px;
+}
+
+#jsonEditor {
+    flex: 1;
+    border: none;
+    resize: none;
+    overflow-y: auto;
+}
+
+#mySAGEChart {
+    flex: 1;
+    border: none;
+    overflow: auto;
+}
+
+.CodeMirror {
+    width: 100% !important; /* Ensure CodeMirror takes full width */
+    height: 100% !important; /* Ensure CodeMirror takes full height */
+}
+
+.CodeMirror-vscrollbar, .CodeMirror-hscrollbar, .CodeMirror-scrollbar-filler {
+    z-index: 0 !important;
+}
+
+#buildButton {
+    align-self: center;
+    border: 2px solid gray;
+    background-color: white;
+    color: white;
+    border-radius: 50%; /* Make the button round */
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    background-image: url('build.svg');
+    background-size: 60%; /* Adjust the size of the background image */
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#exampleSelector {
+    margin: 10px; /* Add some space between the dropdown and the editor */
+}
+

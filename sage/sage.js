@@ -206,7 +206,7 @@ class CModalDialog extends CWindow
         addListener(document, 'mousedown', this.onDocumentMouseDown);
         addListener(this.close_button, 'click', this.close);
 		
-		if (isModuleInitialized) {
+        if (isSAGEInitialized) {
 			Module._MakeDeaf(1);
 		}
     }
@@ -222,7 +222,7 @@ class CModalDialog extends CWindow
         removeListener(document, 'mousedown', this.onDocumentMouseDown);
         removeListener(this.close_button, 'click', this.close);
 		
-		if (isModuleInitialized) {
+        if (isSAGEInitialized) {
 			Module._MakeDeaf(0);
 		}
     }
@@ -480,7 +480,6 @@ function getColorFormatFromStr(str)
 
 class CColorPicker extends CWindow 
 {
-
     // Default settings
     settings = {
         el: '[data-coloris]',
@@ -1313,15 +1312,14 @@ COLOR_DIALOG = null;
 function onChangeColor(e)
 {
     console.log("openColorDialog function " + e.detail.color);
-    //Module.ccall('ModifyColor', 'number', ['number', 'string', 'bool'], [COLOR_DIALOG.modifierId, e.detail.color, false]);
 }
 
-function openColorDialog(id, rectangle, color)
+function openColorDialog(id, title, rectangle, color)
 {
-    console.log("openColorDialog function");
+    console.log("openColorDialog function - ", title);
     if (!COLOR_DIALOG) {
         COLOR_DIALOG = new CModalDialog(new CColorPicker(id, color), rectangle, getModuleWnd());
-        COLOR_DIALOG.modal_settings.title = 'Set color';
+        COLOR_DIALOG.modal_settings.title = title;
         COLOR_DIALOG.add(document.body, 'color-dialog');
 
         addListener(COLOR_DIALOG.content_window.getElement(), 'color:pick', onChangeColor);
@@ -1338,10 +1336,11 @@ function closeColorDialog()
         removeListener(COLOR_DIALOG.getElement(), 'window:close', closeColorDialog);
 
         COLOR_DIALOG.remove();
-        Module.ccall('ModifyColor', 'number', ['number', 'string'], [COLOR_DIALOG.content_window.modifierId, COLOR_DIALOG.content_window.newColor, true]);        
+        Module.ccall('ModifyColor', 'number', ['number', 'string'], [COLOR_DIALOG.content_window.modifierId, COLOR_DIALOG.content_window.newColor]);        
         COLOR_DIALOG = null;
     }
 } 
+
 class ContextMenu {
     constructor(container, items, id) {
         this.container = container;
@@ -1364,15 +1363,14 @@ class ContextMenu {
                 !e.target.classList.contains('item') && 
                 !e.target.parentElement.classList.contains('item')) {
                 //this.hideAll();
-				closeContextMenu();
+                closeContextMenu();
             }
         };
 
         this._oncontextmenu = e => {
             e.preventDefault();
-			//e.stopPropagation();
 	
-			if (e.target != this.dom && 
+            if (e.target != this.dom && 
 				//e.target != this.main_dom && 
                 e.target.parentElement != this.dom && 
 				//e.target.parentElement != this.main_dom && 
@@ -1380,7 +1378,7 @@ class ContextMenu {
                 !e.target.parentElement.classList.contains('item')) {
 				//this.hideAll();
 				//this.show(e.clientX, e.clientY, true);
-				closeContextMenu();
+                closeContextMenu();
             }
         };
 		
@@ -1395,12 +1393,12 @@ class ContextMenu {
 
             //this.hideAll();
             //this.show(e.clientX, e.clientY, true);
-			closeContextMenu();
+            closeContextMenu();
         };
 
         this._onblur = e => {
             //this.hideAll();
-			closeContextMenu();
+            closeContextMenu();
         };
     }
 
@@ -1439,25 +1437,23 @@ class ContextMenu {
 		}
 		item.appendChild(item_mark);
 
-        const label = document.createElement('span');
-        label.classList.add('label');
-        label.innerText = data.hasOwnProperty('text') ? data.text.toString() : '';
-        item.appendChild(label);
+		const label = document.createElement('span');
+		label.classList.add('label');
+		label.innerText = data.hasOwnProperty('text') ? data.text.toString() : '';
+		item.appendChild(label);
 
 
 		const is_submenu = data.hasOwnProperty('subitems') && Array.isArray(data.subitems) && data.subitems.length > 0
 
-        if (data.hasOwnProperty('disabled') && data.disabled) {
-            item.classList.add('disabled');
-        } else {
-            item.classList.add('enabled');
+		if (data.hasOwnProperty('disabled') && data.disabled) {
+			item.classList.add('disabled');
+		} else {
+			item.classList.add('enabled');
 			
 			if (data.hasOwnProperty('default') && data.default) {
 				item.classList.add('default');
 			}
-        }
-		
-		
+		}
 
         const hotkey = document.createElement('span');
         hotkey.classList.add('hotkey');
@@ -1601,7 +1597,7 @@ class ContextMenu {
             }
         }
 		
-		if (this.main_dom != this.dom && isModuleInitialized) {
+        if (this.main_dom != this.dom && isSAGEInitialized) {
 			Module._MakeDeaf(0);
 		}
     }
@@ -1641,7 +1637,7 @@ class ContextMenu {
 			this.main_dom = overlay;
 			
 			// Disable pointer events on the canvas
-			if (isModuleInitialized) {
+            if (isSAGEInitialized) {
 				Module._MakeDeaf(1);
 			}
 		}
@@ -1693,51 +1689,58 @@ class ContextMenu {
 
 var CONTEXT_MENU = null;
 
-
+let isContextMenuOpening = false;
 function closeContextMenu(){
-	if (CONTEXT_MENU) {
-		CONTEXT_MENU.hideAll();
+    if (!isContextMenuOpening && CONTEXT_MENU) {
+        CONTEXT_MENU.hideAll();
 		CONTEXT_MENU.uninstall();
-		CONTEXT_MENU = null;
+        CONTEXT_MENU = null;
+        console.log('The context menu closed');
 	}
 }
 
 function openContextMenu(id, xy, jsonData){
-    console.log('updateContextMenu');
-	console.log(xy);
-	console.log(id);
-	console.log(jsonData);
-	
-	if (jsonData != '{}')
-	{
+	if (jsonData != '{}') {
 		try {
 			const menuObject = JSON.parse(jsonData);
-            console.log(menuObject);
-            console.log("ID" + id);
-		
+			console.log(menuObject);
+			console.log("ID" + id);
+
 			if (Object.keys(menuObject).length != 0) {
-				
+
 				closeContextMenu();
-				
+
 				const pixelRatio = window.devicePixelRatio || 1;
-				
-				CONTEXT_MENU = new ContextMenu(document.body, menuObject, id);
-				CONTEXT_MENU.install();
-				CONTEXT_MENU.show(xy.x / pixelRatio, xy.y / pixelRatio, true);
-			}
-		} catch (error) {
-			console.error("Invalid JSON string:", error);
-		}
-	}
+
+				isContextMenuOpening = true;
+				menu = new ContextMenu(document.body, menuObject, id);
+				menu.install();
+				menu.show(xy.x / pixelRatio, xy.y / pixelRatio, true);
+				CONTEXT_MENU = menu;
+
+				// Use a timeout to reset the flag after a short delay
+				setTimeout(() => {
+					isContextMenuOpening = false;
+				}, 100);
+
+                console.log('context menu openeded', xy.x / pixelRatio, xy.y / pixelRatio);
+            }
+        } catch (error) {
+            console.error("Invalid JSON string:", error);
+        }
+    }
+    else {
+        console.error("Context menu JSON data is empty. Context menu failed to open.");
+    }
 }
  
 // Flag to track if the mouse button is pressed inside the chart box
-let mouseCaptureChartBox = false;
-let mouseIsCanvasHandled = false;
-let isModuleInitialized = false;
+let SAGE_mouseCaptureChartBox = false;
+let SAGE_mouseIsCanvasHandled = false;
+let isSAGEInitialized = false;
 
 //-------------------------------------------------------------------------------
-function createContainerWithCanvas(containerId, canvasId) {
+function createSAGEContainerWithCanvas(containerId, canvasId) {
     // Create the container <div>
     var container = document.createElement('div');
     container.id = containerId;
@@ -1767,7 +1770,7 @@ function createContainerWithCanvas(containerId, canvasId) {
     console.log('Container and canvas added successfully.');
 }
 	
-function createOffscreenCanvas(canvasId) {
+function createSAGEOffscreenCanvas(canvasId) {
 
     // Create the canvas element
     var new_canvas = document.createElement('canvas');
@@ -1779,10 +1782,14 @@ function createOffscreenCanvas(canvasId) {
     console.log('Offscreen canvas was added successfully.');
 }
 
-function initIdealGraphics() {	
+function getSAGEWASMPath() {
+	return "./sage/sage_wasm.js";
+}
+
+function initSAGE() {	
 
 	var script = document.createElement('script');		
-	script.src = "sage/sage_wasm.js";
+	script.src = getSAGEWASMPath();
 	script.onload = () => {
 		console.log('IdealGraphics module loaded');
 	};				
@@ -1793,8 +1800,9 @@ function initIdealGraphics() {
 }
 
 // Function to handle canvas resize
-function handleCanvasResize(entries) {
-	updateCanvasHDPI();
+function handleSAGECanvasResize(entries)
+{
+	updateSAGECanvasHDPI();
 }
 
 // Function to handle mouse leave event on chart box
@@ -1818,18 +1826,18 @@ function handleMouseMove(event) {
 	// Use querySelector to find the first element with the class 'modal-overlay'
 	var modalOverlay = document.querySelector('.modal-overlay');
 	
-	let mouseMustBeHandledByWASM = !modalOverlay && (isCursorInsideChartBox || mouseCaptureChartBox);
+	let mouseMustBeHandledByWASM = !modalOverlay && (isCursorInsideChartBox || SAGE_mouseCaptureChartBox);
 
 
 	console.log('Test mouse position: ' + mouseMustBeHandledByWASM);
 
-	if (mouseIsCanvasHandled != mouseMustBeHandledByWASM) {
-		mouseIsCanvasHandled = mouseMustBeHandledByWASM;
+	if (SAGE_mouseIsCanvasHandled != mouseMustBeHandledByWASM) {
+		SAGE_mouseIsCanvasHandled = mouseMustBeHandledByWASM;
 
 
 		const global_canvas = getModuleWnd();
 		
-		if (mouseIsCanvasHandled) {
+		if (SAGE_mouseIsCanvasHandled) {
 
 			console.log('Enter chart window');
 
@@ -1840,7 +1848,7 @@ function handleMouseMove(event) {
 			
 			global_canvas.style.pointerEvents = 'auto';
 			console.log('Chart-box mouse enter');
-			if (isModuleInitialized) {
+			if (isSAGEInitialized) {
 				Module._MakeDeaf(0);
 			}
 		}
@@ -1855,7 +1863,7 @@ function handleMouseMove(event) {
 
 			global_canvas.style.pointerEvents = 'none';
 			console.log('Chart-box mouse leave');
-			if (isModuleInitialized) {
+			if (isSAGEInitialized) {
 				Module._MakeDeaf(1);
 			}
 		}
@@ -1891,7 +1899,7 @@ function blockDefaultInsideChart(event) {
 function handleMouseDown(event) {
 	if (event.button === 0) {
 		// Left mouse button is pressed inside the chart box
-		//mouseCaptureChartBox = true;
+		//SAGE_mouseCaptureChartBox = true;
 		//handleMouseMove(event);
 	}
 }
@@ -1900,7 +1908,7 @@ function handleMouseDown(event) {
 function handleMouseUp(event) {
 	if (event.button === 0) {
 		// Left mouse button is released
-		mouseCaptureChartBox = false;
+		SAGE_mouseCaptureChartBox = false;
 		handleMouseMove(event);
 	}
 }
@@ -1915,7 +1923,7 @@ function handleChartBoxResize(entries) {
 	console.log('Chart-box resized:', chartBoxId, newWidth, newHeight);
 			
 	//var result = Module.ccall('UpdateChartElement', 'bool', ['string'], [chartBoxId]);
-	if (isModuleInitialized) {
+		if (isSAGEInitialized) {
 		//var result = Module.ccall('UpdateChartElement', 'bool', ['string'], [chartBoxId]);
 			const dataPtr = Module._malloc(chartBoxId.length + 1);
 			Module.stringToUTF8(chartBoxId, dataPtr, chartBoxId.length + 1);
@@ -1956,7 +1964,6 @@ function createModalHeader() {
 
     return header;
 }
-
 function createModalBody() {
     const body = document.createElement('div');
     body.className = 'modal-body';
@@ -1984,7 +1991,6 @@ function createModalContent() {
 
     return modalContent;
 }
-
 function initializeTextDialog() {
     const modal = document.createElement('div');
     modal.id = 'textDialog';
@@ -2039,7 +2045,7 @@ function initializeTextDialog() {
 		dlg.style.display = 'block';
 		const textInput = dlg.querySelector('.text-input');
         textInput.focus();
-        if (isModuleInitialized) {
+		if (isSAGEInitialized) {
 			Module._MakeDeaf(1);			
 		}
     }
@@ -2047,7 +2053,7 @@ function initializeTextDialog() {
     function closeModal() {
         const dlg = document.getElementById('textDialog');
 		dlg.style.display = 'none';
-        if (isModuleInitialized) {
+		if (isSAGEInitialized) {
 			Module._MakeDeaf(0);
 		}
     }
@@ -2058,15 +2064,15 @@ function initializeTextDialog() {
 	
 document.addEventListener("DOMContentLoaded", function() {
     
-	createContainerWithCanvas('SAGE_canvasGlobalContainer', 'SAGE_mainCanvas');
-	createOffscreenCanvas('SAGE_textCanvas');
-	createOffscreenCanvas('SAGE_tooltipCanvas');
+	createSAGEContainerWithCanvas('SAGE_canvasGlobalContainer', 'SAGE_mainCanvas');
+	createSAGEOffscreenCanvas('SAGE_textCanvas');
+	createSAGEOffscreenCanvas('SAGE_tooltipCanvas');
 	//initializeTextDialog();
 		
     {//subscribe to canvas resizing here
 		const canvas_container = document.getElementById('SAGE_canvasGlobalContainer');
 		// Create a ResizeObserver
-		const resizeObserver = new ResizeObserver(handleCanvasResize);
+		const resizeObserver = new ResizeObserver(handleSAGECanvasResize);
 		// Observe the canvas element
 		resizeObserver.observe(canvas_container);
 	}
@@ -2093,12 +2099,12 @@ document.addEventListener("DOMContentLoaded", function() {
 		});
 	}
 	
-	initIdealGraphics();
+	initSAGE();
 });
 
 var Module = {
 	onRuntimeInitialized: function () {
-		isModuleInitialized = true;
+		isSAGEInitialized = true;
 		console.log('WASM module was initialized');
 		Module.doNotCaptureKeyboard = true;
 	},
@@ -2139,7 +2145,6 @@ function handleStateMouseUp(event) {
 
 window.addEventListener('mousedown', handleStateMouseDown);
 window.addEventListener('mouseup', handleStateMouseUp);
-
 // Expose mouseState to Emscripten
 Module['mouseState'] = mouseState;
 //---------------------------------------------------------------------------------------
@@ -2179,7 +2184,7 @@ window.addEventListener('keyup', handleKeyUp);
 // Expose modifierKeyStates to Emscripten
 Module['modifierKeyStates'] = modifierKeyStates;
 //---------------------------------------------------------------------------------------
-async function getClipboardText() {
+/*async function getClipboardText() {
     try {
         const text = await navigator.clipboard.readText();
         return text;
@@ -2187,7 +2192,28 @@ async function getClipboardText() {
         console.error('Failed to read clipboard contents: ', err);
         return '';
     }
+}*/
+
+function getClipboardText(id) {
+	return navigator.clipboard.readText()
+		.then(text => {
+			console.log('Clipboard text reading was finished successfully:', text);
+
+			const bufferSize = Module.lengthBytesUTF8(text);
+			const bufferPtr = Module._malloc(bufferSize + 1);
+			Module.stringToUTF8(text, bufferPtr, bufferSize + 1);
+
+			// Call the WASM function to process the text data
+			const result = Module.ccall('setClipboardData', 'number', ['number', 'number'], [bufferPtr, id]);
+
+			// Free the allocated memory in WASM when done
+			Module._free(bufferPtr);
+		})
+		.catch(err => {
+			console.error('Failed to read clipboard contents:', err);
+		});
 }
+
 // Expose the function to the Emscripten module
 Module['getClipboardText'] = getClipboardText;
 //---------------------------------------------------------------------------------------
@@ -2199,10 +2225,21 @@ async function setClipboardText(text) {
         //console.error('Failed to set clipboard text:', err);
     }
 }
+
+/*function setClipboardText(text) {
+	navigator.clipboard.writeText(text)
+		.then(() => {
+			console.log('Clipboard text set successfully:', text);
+		})
+		.catch(err => {
+			console.error('Failed to set clipboard text:', err);
+		});
+}*/
+
 // Expose the function to the Emscripten module
 Module['setClipboardText'] = setClipboardText;
 //---------------------------------------------------------------------------------------
-function updateCanvasHDPI() {
+function updateSAGECanvasHDPI() {
 	const pixelRatio = window.devicePixelRatio || 1;
 
 	const canvas_container = document.getElementById('SAGE_canvasGlobalContainer');
@@ -2215,18 +2252,18 @@ function updateCanvasHDPI() {
 	global_canvas.width = newWidth;
 	global_canvas.height = newHeight;
 
-	if (isModuleInitialized) {
+	if (isSAGEInitialized) {
 		Module._ResizeCanvas(newWidth, newHeight);
 	}
 
 	global_canvas.style.width = canvas_container.offsetWidth + "px";
 	global_canvas.style.height = canvas_container.offsetHeight + "px";
 
-	console.log(`updateCanvasHDPI width: ${newWidth}, height: ${newHeight}, ratio: ${pixelRatio}`);
-}	
+	console.log(`updateSAGECanvasHDPI width: ${newWidth}, height: ${newHeight}, ratio: ${pixelRatio}`);
+}
 
-function removeAllCharts() {
-	if (isModuleInitialized) {
+function clearSAGE() {
+	if (isSAGEInitialized) {
 		var number_of_charts = Module._GetNumberOfCharts();
 		for (var i = 0; i < number_of_charts; ++i) {
 			Module._RemoveChart(0);
@@ -2234,69 +2271,145 @@ function removeAllCharts() {
 	}
 }
 
-function beginLoading() {
+function beginSAGELoading() {
 	console.log(`************** Begin loading`);
 	var loader = document.getElementById("loader");
 	if (loader)
 		loader.classList.remove('hidden');
 }
 
-function endLoading() {
+function endSAGELoading() {
 	console.log(`************** End loading`);
 	var loader = document.getElementById("loader");
 	if (loader)
 		loader.classList.add('hidden');
 }
 		
-function loadData(text, add) {
+function setSAGEData(text, add) {
 	if (!add) {
-		removeAllCharts();
+		clearSAGE();
 	}
-
-	if (isModuleInitialized) {
+		
+	if (isSAGEInitialized) {
 		const bufferSize = Module.lengthBytesUTF8(text);
 		const bufferPtr = Module._malloc(bufferSize + 1);
 		Module.stringToUTF8(text, bufferPtr, bufferSize + 1);
 
 		console.log(`processTextData method started`);
 		// Call the WASM function to process the text data
-		Module.ccall('processTextData', 'number', ['number', 'number'], [bufferPtr, add]);
+		const result = Module.ccall('processTextData', 'number', ['number', 'number'], [bufferPtr, add]);
 		console.log(`processTextData method ended`);
 
 		// Free the allocated memory in WASM when done
 		Module._free(bufferPtr);
-	}	
+		return result;
+	}
+
+	return -1;
 }
 
-function loadContent() {
+function loadData(text, add){
+	return setSAGEData(text, add);
+}
+function escapeHtmlSAGE(unsafe) {
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
+
+function getSAGEError(html_friendly) {
+	if (isSAGEInitialized) {
+		const error = Module.ccall('getError', 'string', []);
+
+		if (html_friendly) {
+			return escapeHtmlSAGE(error);
+		}
+		return error;
+	}
+
+	return "SAGE is not initialized";
+}
+function getSAGEInitialData(){
+	return '';
+}
+function loadSAGEContent() {
 	return new Promise((resolve, reject) => {
-		beginLoading();
-		loadData(getInitialData(), 1);
-		endLoading(); // Hide loading spinner on error
+		beginSAGELoading();
+		setSAGEData(getSAGEInitialData(), 1);
+		endSAGELoading(); // Hide loading spinner on error
     });	
 }
-		
-function onModuleIntitialized()
+
+function sendReq(site, machine, section) {
+	var http;
+	var browser = navigator.appName;
+	if (browser == "Microsoft Internet Explorer") {
+		http = new ActiveXObject("Microsoft.XMLHTTP");
+	} else {
+		http = new XMLHttpRequest();
+	}
+	var page = window.location.pathname;
+	var req = 'https://odesa.intel.com/counter.asp?Action=pagehit&Machine=' + machine + '&Site=' + site + '&Section=' + section + '&Page=' + page
+	http.open('get', req);
+	http.send(null);
+}
+
+function onSAGEIntitialized() {
+}
+
+function onSAGEIntitializedRoutine ()
 {
 	// Start async data loading
-    loadContent().then(() => {
+    loadSAGEContent().then(() => {
         console.log('************* Async loading completed.');
     }).catch((error) => {
         console.error('************* Async loading failed:', error);		
-    });
+	});
+
+	onSAGEIntitialized();	
 }
 
 // Assign the function to the global window object
-window.onModuleIntitialized = onModuleIntitialized; 
+window.onModuleIntitialized = onSAGEIntitialized; 
 class CMessageBox extends CWindow 
 {
-    message_box_settings = {
+    settings = {
         text: "",
+
+        cancelButton:
+        {
+            show: false,
+            label: 'Cancel'
+        },
+
+        okButton:
+        {
+            show: false,
+            label: 'OK'
+        },
+
+        yesButton:
+        {
+            show: false,
+            label: 'Yes'
+        },
+
+        noButton:
+        {
+            show: false,
+            label: 'No'
+        }
     };
 
-    constructor(text) {
+    constructor(modifierId) {
+
         super();
-		this.message_box_settings.text = text;
+
+        this.modifierId = modifierId;
+        this.result = '';
     }
 
     onAddElement() {
@@ -2304,42 +2417,148 @@ class CMessageBox extends CWindow
 
         // Reference the UI elements
         this.messageBox = this.getElement();
+
+        this.okButton = document.getElementById('messagebox-ok-button');
+        this.cancelButton = document.getElementById('messagebox-cancel-button');
+        this.yesButton = document.getElementById('messagebox-yes-button');
+        this.noButton = document.getElementById('messagebox-no-button');
+
+        this.onCancelButtonClick = this.onCancelButtonClick.bind(this);
+        this.onOkButtonClick = this.onOkButtonClick.bind(this);
+        this.onYesButtonClick = this.onYesButtonClick.bind(this);
+        this.onNoButtonClick = this.onNoButtonClick.bind(this);
+
+        addListener(this.okButton, 'click', this.onOkButtonClick);
+        addListener(this.cancelButton, 'click', this.onCancelButtonClick);
+        addListener(this.yesButton, 'click', this.onYesButtonClick);
+        addListener(this.noButton, 'click', this.onNoButtonClick);
     }
 
     onRemoveElement(){
         super.onRemoveElement();
+
+        removeListener(this.okButton, 'click', this.onOkButtonClick);
+        removeListener(this.cancelButton, 'click', this.onCancelButtonClick);
+        removeListener(this.yesButton, 'click', this.onYesButtonClick);
+        removeListener(this.noButton, 'click', this.onNoButtonClick);
+    }
+
+    onCancelButtonClick() {
+        console.log("MessageBox::onCancelButtonClick fuction");
+        this.result = 'cancel';
+        this.close({ result: 'cancel' });
+    }
+
+    onOkButtonClick() {
+        console.log("MessageBox::onCancelButtonClick fuction");
+        this.result = 'ok';
+        this.close({ result: 'ok' });
+    }
+
+    onYesButtonClick() {
+        console.log("MessageBox::onCancelButtonClick fuction");
+        this.result = 'yes';
+        this.close({ result: 'yes' });
+    }
+
+    onNoButtonClick() {
+        console.log("MessageBox::onCancelButtonClick fuction");
+        this.result = 'no';
+        this.close({ result: 'no' });
     }
 
     render()
     {
         var messageBox = super.render();
         messageBox.className = 'message-box';
-        messageBox.innerText = this.message_box_settings.text;
-  
+
+        {
+            var div = document.createElement('div');
+            div.className = 'messagebox-text-area';
+            div.innerText = this.settings.text;
+            messageBox.appendChild(div);
+        }
+
+        {
+            var div = document.createElement('div');
+            div.className = 'messagebox-button-row';
+
+            if (this.settings.cancelButton.show) {//cancelButton
+                var button = document.createElement('button');
+                button.id = 'messagebox-cancel-button';
+                button.type = 'button';
+                button.className = 'messagebox-button';
+                button.innerText = this.settings.cancelButton.label;
+                div.appendChild(button);
+            }
+
+            if (this.settings.okButton.show) {//okButton
+                var button = document.createElement('button');
+                button.id = 'messagebox-ok-button';
+                button.type = 'button';
+                button.className = 'messagebox-button';
+                button.innerText = this.settings.okButton.label;
+                div.appendChild(button);
+            }
+
+            if (this.settings.noButton.show) {//noButton
+                var button = document.createElement('button');
+                button.id = 'messagebox-no-button';
+                button.type = 'button';
+                button.className = 'messagebox-button';
+                button.innerText = this.settings.noButton.label;
+                div.appendChild(button);
+            }
+
+            if (this.settings.yesButton.show) {//yesButton
+                var button = document.createElement('button');
+                button.id = 'messagebox-yes-button';
+                button.type = 'button';
+                button.className = 'messagebox-button';
+                button.innerText = this.settings.yesButton.label;
+                div.appendChild(button);
+            }
+
+            messageBox.appendChild(div);
+        }
+
         return messageBox;
     }
 }
 
 MESSAGE_BOX = null;
 
-function openMessageBox(title, text, style)
+function openMessageBox(id, title, text, style)
 {
-    console.log('openMessageBox function - ', title, text);
+    console.log('openMessageBox function - ', title, text, style);
     if (!MESSAGE_BOX) {
-        MESSAGE_BOX = new CModalDialog(new CMessageBox(text));
+
+        messageboxContent = new CMessageBox(id);
+        messageboxContent.settings.text = text;
+       
+        messageboxContent.settings.yesButton.show = style.includes('yes');
+        messageboxContent.settings.noButton.show = style.includes('no');
+        messageboxContent.settings.okButton.show = style.includes('ok');
+        messageboxContent.settings.cancelButton.show = style.includes('cancel');
+
+        MESSAGE_BOX = new CModalDialog(messageboxContent);
         MESSAGE_BOX.modal_settings.title = title;
         MESSAGE_BOX.add(document.body, 'message-box-dlg');
+
         addListener(MESSAGE_BOX.getElement(), 'window:close', closeMessageBox)
     }
 }
 
-function closeMessageBox()
+function closeMessageBox(e)
 {
-    console.log("closeMessageBox function");
+    console.log('closeMessageBox function');
 
     if (MESSAGE_BOX) {
+        console.log('MessageBox result: ', MESSAGE_BOX.result);
         removeListener(MESSAGE_BOX.getElement(), 'window:close', closeMessageBox);
+
         MESSAGE_BOX.remove();
+        Module.ccall('MessageBox', 'number', ['number', 'string'], [MESSAGE_BOX.content_window.modifierId, MESSAGE_BOX.content_window.result, true]);
         MESSAGE_BOX = null;
     }
 } 

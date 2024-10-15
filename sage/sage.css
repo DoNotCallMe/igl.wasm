@@ -238,17 +238,17 @@
 
 .color-clear,
 .color-apply {
-  /*display: none;*/
-  height: 24px;
-  padding: 0 20px;
-  border: 1px solid gray;
-  border-radius: 12px;
-  color: rgb(0, 0, 0);
-  background-color: rgb(200, 200, 200);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 400;
-  cursor: pointer;
+    /*display: none;*/
+    height: 24px;
+    padding: 0 20px;
+    border: 1px solid gray;
+    border-radius: 12px;
+    color: black;
+    background-color: rgb(200, 200, 200);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
 }
 
 .color-clear:hover,
@@ -465,7 +465,6 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0);
-    /*zIndex: -1;*/
     pointer-events: none; /* Allows events to pass through */
 }
 
@@ -475,26 +474,21 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0);
-    /*zIndex: -1;*/
     pointer-events: none; /* Allows events to pass through */
 }
 
 #SAGE_textCanvas {
-    top: 0;
-    left: 0;
     width: 256px;
     height: 256px;
-    position: absolute; /* Position it absolutely */
-    visibility: hidden; /* Hide it from view */
+    position: absolute;
+    visibility: hidden;
 }
 
 #SAGE_tooltipCanvas {
     width: 64px;
     height: 64px;
-    /*zIndex: 100;*/
-    position: absolute; /* Position it absolutely */
-    visibility: hidden; /* Hide it from view */
-    /*border: 3px solid green;*/
+    position: absolute;
+    visibility: hidden;
 }
 
 #SAGE_textDialog {
@@ -502,13 +496,60 @@ body {
 } 
 .message-box {
     color: gray;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 1;
+    row-gap: 10px;
+    justify-content: space-between;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    box-sizing: border-box; /* Include padding in width and height calculations */
+}
+
+.messagebox-text-area {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box; /* Include padding in width and height calculations */
+}
+
+.messagebox-button-row {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 10px;
+    width: 100%;
+    align-content: right;
+}
+
+.messagebox-button {
+    /*display: none;*/
+    height: 24px;
+    border: 1px solid gray;
+    border-radius: 12px;
+    padding: 0 20px;
+    color: black;
+    background-color: rgb(200, 200, 200);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.messagebox-button:hover {
+    outline: none;
+    border: 1px solid black;
+    background-color: gray;
+    color: white;
 }
 
 #message-box-dlg {
     top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-} 
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+ 
 .tooltip {
     position: fixed;
     background: white;
@@ -532,8 +573,9 @@ body {
 }
 
 .modal-window {
+    padding: 5px;
     position: absolute;
-    z-index: 1000;
+    z-index: -1;
     border-radius: 10px;
     justify-content: space-between;
     -moz-user-select: none;
@@ -564,17 +606,17 @@ body {
     color: white; /* Adjust color as needed */
     background: none;
     cursor: pointer;
-    display: inline-block;
-    height: 20px;
-    width: 20px;
+    display: flex; /* Use flexbox */
+    align-items: center; /* Center vertically */
+    justify-content: center; /* Center horizontally */
+    height: 20px; /* Adjust height as needed */
+    width: 20px; /* Adjust width as needed */
     margin: 10px;
     border: none;
-    cursor: pointer;
     padding: 0px;
     vertical-align: middle;
-    text-align: center; /* Corrected property */
+    text-align: center;
 }
-
 .button-close:hover {
     transform: scale(1.2);
 } 
