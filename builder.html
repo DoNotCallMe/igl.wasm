@@ -12,7 +12,7 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
     
-    <title>SAGE builder 1.2.0</title>
+    <title>SAGE builder 1.2.7</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
@@ -115,10 +115,12 @@
 			}
 			jsonEditor.setValue(data);
         } catch (e) {
-		loadData("",0)
-        console.error('JSON Parsing Error:', e); // Log the exception error to the console
-		chartContainer.innerHTML = `<p style="color: red;">Invalid JSON: ${e.message}</p>`;
+		    loadData("",0)
+            console.error('JSON Parsing Error:', e); // Log the exception error to the console
+            chartContainer.innerHTML = `<p style="color: red;">Invalid JSON: ${e.message}</p>`;
         }
+		//const value = getSAGEJsonValue("Color.Values");
+		//console.log('Color values:', value); // Log the exception error to the console
     }
 		
 	function insertJsonNode(jsonEditor, newNode) {

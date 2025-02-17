@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="sage/sage.css">
+    <script type="text/javascript" src="sage/sage.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #controlPanel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            width: 100%;
+            gap: 10px;
+        }
+        button {
+            font-size: 1.2em;
+            padding: 10px 25px;
+            background-color: orange;
+            border: none;
+            cursor: pointer;
+        }
+        #chartsContainer {
+            display: grid;
+            width: 100%;
+            height: 80vh;
+            gap: 0;
+        }
+        .SAGE_chart {
+            width: 100%;
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        #stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controlPanel">
+        <label for="numPoints">Number of Points:</label>
+        <input type="number" id="numPoints" value="10000" min="1">
+        
+        <label for="numCols">Number of Columns:</label>
+        <input type="number" id="numCols" value="1" min="1">
+        
+        <label for="numRows">Number of Rows:</label>
+        <input type="number" id="numRows" value="1" min="1">
+        
+        <label for="chartType">Chart Type:</label>
+        <select id="chartType">
+        </select>
+        
+        <button onclick="generatePlots()">Build</button>
+    </div>
+    <div id="stats">
+        <p id="timer">Initialization time: -</p>
+        <p id="fps">FPS: -</p>
+    </div>
+    <div id="chartsContainer"></div>
+    
+    <script>
+        let animationFrame;
+        function measureFPS() {
+            let frameCount = 0;
+            let startTime = performance.now();
+            
+            function countFrames() {
+                frameCount++;
+                let currentTime = performance.now();
+                if (currentTime - startTime >= 1000) {
+                    document.getElementById('fps').innerText = `FPS: ${frameCount}`;
+                    frameCount = 0;
+                    startTime = performance.now();
+                }
+                animationFrame = requestAnimationFrame(countFrames);
+            }
+            animationFrame = requestAnimationFrame(countFrames);
+        }
+        
+        const examples = {
+            "Scatter plot 2D": '{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"Points":{"Size":22}},"ChartType":"Scatter plot 2D","Color":{"Name":"Type","Source":{"Categories":["a0","a1","a2","a3","a4","a5","a6","a7","a8","a9"],"Values":"_color_placeholder_"}},"X":{"Name":"X","Source":"_x_placeholder_"},"Y":{"Name":"Y","Source":"_y_placeholder_"}}',
+			"Scatter plot 3D": '{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"Points":{"Size":22}},"ChartType":"Scatter plot 3D","Color":{"Name":"Type","Source":{"Categories":["a0","a1","a2","a3","a4","a5","a6","a7","a8","a9"],"Values":"_color_placeholder_"}},"X":{"Name":"X","Source":"_x_placeholder_"},"Y":{"Name":"Y","Source":"_y_placeholder_"},"Z":{"Name":"Z","Source":"_z_placeholder_"}}',
+            "Lines": '{"Chart":{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"Lines":{"Line":{"Style":"Dash","Scale":4}}},"ChartType":"Lines","CheckBoxFilter":"ColorVarId","Color":"ColorVarId","X":"XVarId","Y":"YVarId"},"Data":[{"Name":"X","Source":{"Formatter":{"Type":"CompactTimeFormatter"},"Values":"_x_placeholder_"},"Id":"XVarId","Type":"Trivial"},{"Name":"Y","Source":"_y_placeholder_","Id":"YVarId","Type":"Trivial"},{"Name":"Color","Source":{"Categories":["a0","a1","a2","a3","a4","a5","a6","a7","a8","a9"],"Values":"_color_placeholder_"},"Id":"ColorVarId","Type":"Trivial"}]}',
+            "Histogram": '{"Chart":{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"Histogram":{"Contour":{"Color":"black","Opacity":0.40000000000000002}},"TargetAxis":{"Caption":{"Show":true,"Color":"green"}}},"ChartType":"Histogram","CheckBoxFilter":"ColorVarId","Color":"ColorVarId","Target":"XVarId","Text":"ColorVarId"},"Data":[{"Name":"X","Source":"_x_placeholder_","Id":"XVarId","Type":"Trivial"},{"Name":"Color","Source":{"Categories":["a0","a1","a2","a3","a4","a5","a6","a7","a8","a9"],"Values":"_color_placeholder_"},"Id":"ColorVarId","Type":"Trivial"}]}',
+            "Color map": '{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"XAxis":{"Labels":{"Color":"orange"},"TickMark":{"Show":true},"Minor":{"NumberOfTicks":1,"Grid":{"Style":"Dash"}},"StepCalculation":{"RelativeIncrement":0.10000000000000001}}},"ChartType":"Color map","Color":{"Name":"Z","Source":"_z_placeholder_"},"X":{"Name":"Mileage","Source":"_x_placeholder_"},"Y":{"Name":"Price","Source":"_y_placeholder_"}}',
+            "Hexagon map": '{"Chart":{"ChartProperties":{"Domain":"mySAGEChart","Toolbar":{"Show":true}},"Properties":{"Hexagon":{"HexagonSize":{"Weight":false,"Size":0.95},"Tessellation":{"RelativeSize":0.1},"Contour":{"Opacity":1}}},"ChartType":"Hexagon map","Color":"X_id","X":"X_id","Y":"Y_id","Text":{"Variables":["X_id","Y_id","Color_id"]}},"Data":[{"Name":"X","Source":"_x_placeholder_","Id":"X_id","Type":"Trivial"},{"Name":"Y","Source":"_y_placeholder_","Id":"Y_id","Type":"Trivial"},{"Name":"Color","Source":{"Categories":["a0","a1","a2","a3","a4","a5","a6","a7","a8","a9"],"Values":"_color_placeholder_"},"Id":"Color_id","Type":"Trivial"}]}',
+        };
+        
+        const chartTypeSelector = document.getElementById('chartType');
+        for (const [title, json] of Object.entries(examples)) {
+            const option = document.createElement('option');
+            option.value = title;
+            option.textContent = title;
+            chartTypeSelector.appendChild(option);
+        }
+        
+        function generatePlots() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        
+            const numPoints = parseInt(document.getElementById('numPoints').value, 10);
+            const numCols = parseInt(document.getElementById('numCols').value, 10);
+            const numRows = parseInt(document.getElementById('numRows').value, 10);
+            const chartType = document.getElementById('chartType').value;
+
+            if (isNaN(numPoints) || numPoints <= 0 || isNaN(numCols) || numCols <= 0 || isNaN(numRows) || numRows <= 0) {
+                alert("Please enter valid numbers.");
+                return;
+            }
+        
+            document.getElementById('chartsContainer').innerHTML = "";
+            document.getElementById('chartsContainer').style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
+            document.getElementById('chartsContainer').style.gridTemplateRows = `repeat(${numRows}, 1fr)`;
+        
+            // Prepare data strings for all charts
+            const dataStrings = [];
+            const selectedExample = examples[chartType];
+        
+            // Check for all placeholders before any replacements
+			const hasXPlaceholder = selectedExample.includes('_x_placeholder_');
+			const hasYPlaceholder = selectedExample.includes('_y_placeholder_');
+			const hasZPlaceholder = selectedExample.includes('_z_placeholder_');
+			const hasColorPlaceholder = selectedExample.includes('_color_placeholder_');
+			const hasChartPlaceholder = selectedExample.includes('mySAGEChart');
+
+			for (let i = 0; i < numCols * numRows; i++) {
+				
+				let data = selectedExample;
+
+				if (hasChartPlaceholder) {
+					data = data.replace(/mySAGEChart/g, `chart_${i}`);
+				}
+				
+				if (hasXPlaceholder) {
+					let x = Array.from({ length: numPoints }, () => Math.random());
+					data = data.replace(/"_x_placeholder_"/g, `"${x.join(',')}"`);
+				}
+				
+				if (hasYPlaceholder) {
+					let y = Array.from({ length: numPoints }, () => Math.random());
+					data = data.replace(/"_y_placeholder_"/g, `"${y.join(',')}"`);
+				}
+				
+				if (hasZPlaceholder) {
+					let z = Array.from({ length: numPoints }, () => Math.random());
+					data = data.replace(/"_z_placeholder_"/g, `"${z.join(',')}"`);
+				}
+				
+				if (hasColorPlaceholder) {
+					let class10 = Array.from({ length: numPoints }, () => Math.floor(Math.random() * 10));
+					data = data.replace(/"_color_placeholder_"/g, `"${class10.join(',')}"`);
+				}				
+
+				dataStrings.push(data);
+			}
+        
+            clearSAGE();
+        
+            const startTime = performance.now();
+        
+            let dataIndex = 0;
+            for (let r = 0; r < numRows; r++) {
+                for (let c = 0; c < numCols; c++) {
+                    let chartDiv = document.createElement("div");
+                    chartDiv.id = `chart_${dataIndex}`; // Set unique id for each chart
+                    document.getElementById('chartsContainer').appendChild(chartDiv);
+                
+                    const dataString = dataStrings[dataIndex++];
+                
+                    try {
+                        if (loadData(dataString, true) <= 0) {
+                            const error = getSAGEError(true);
+                            console.error('SAGE Error:', error);
+                        }
+                    } catch (e) {
+                        loadData("", 0);
+                        console.error('JSON Parsing Error:', e);
+                    }
+                }
+            }
+        
+            document.getElementById('timer').innerText = `Initialization time: ${(performance.now() - startTime).toFixed(2)} ms`;
+            measureFPS();
+        }
+    </script>
+</body>
+</html>

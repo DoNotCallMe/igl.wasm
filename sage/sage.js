@@ -1741,45 +1741,41 @@ let isSAGEInitialized = false;
 
 //-------------------------------------------------------------------------------
 function createSAGEContainerWithCanvas(containerId, canvasId) {
-    // Create the container <div>
-    var container = document.createElement('div');
-    container.id = containerId;
+	// Create the container <div>
+	var container = document.createElement('div');
+	container.id = containerId;
 
-    // Create the canvas element
-    var global_canvas = document.createElement('canvas');
-    global_canvas.id = canvasId;
-    
-    // Append the canvas to the container
-    container.appendChild(global_canvas);
+	// Create the canvas element
+	var global_canvas = document.createElement('canvas');
+	global_canvas.id = canvasId;
+
+	// Append the canvas to the container
+	container.appendChild(global_canvas);
 	
 	//var loader = document.createElement('div');
-    //loader.id = 'loader';
-    //loader.classList.add('hidden');
-	
+	//loader.id = 'loader';
+	//loader.classList.add('hidden');
+
 	// Append the loader to the container
-    //container.appendChild(loader);
+	//container.appendChild(loader);
 
-    // Append the container to the document body
+	// Append the container to the document body
 	document.body.appendChild(container);
-	/*if (document.body.firstChild) {
-		document.body.insertBefore(container, document.body.firstChild);
-	} else {
-		document.body.appendChild(container);
-	}*/
 
-    console.log('Container and canvas added successfully.');
+
+	console.log('Container and canvas added successfully.');
 }
 	
 function createSAGEOffscreenCanvas(canvasId) {
 
-    // Create the canvas element
-    var new_canvas = document.createElement('canvas');
+	// Create the canvas element
+	var new_canvas = document.createElement('canvas');
 	new_canvas.id = canvasId;
 
-    // Append the container to the document body
+	// Append the container to the document body
 	document.body.appendChild(new_canvas);
 
-    console.log('Offscreen canvas was added successfully.');
+	console.log('Offscreen canvas was added successfully.');
 }
 
 function getSAGEWASMPath() {
@@ -1792,7 +1788,7 @@ function initSAGE() {
 	script.src = getSAGEWASMPath();
 	script.onload = () => {
 		console.log('IdealGraphics module loaded');
-	};				
+	};
 	script.onerror = (error) => {
 		console.error('Error loading IdealGraphics module:', error);
 	};
@@ -1922,9 +1918,8 @@ function handleChartBoxResize(entries) {
 	const chartBoxId = target.id; // Get the ID of the resized element
 	console.log('Chart-box resized:', chartBoxId, newWidth, newHeight);
 			
-	//var result = Module.ccall('UpdateChartElement', 'bool', ['string'], [chartBoxId]);
 		if (isSAGEInitialized) {
-		//var result = Module.ccall('UpdateChartElement', 'bool', ['string'], [chartBoxId]);
+
 			const dataPtr = Module._malloc(chartBoxId.length + 1);
 			Module.stringToUTF8(chartBoxId, dataPtr, chartBoxId.length + 1);
 
@@ -1943,61 +1938,62 @@ let prevX = 0;
 let prevY = 0;
 
 function createModalHeader() {
-    const header = document.createElement('div');
-    header.className = 'modal-header';
+	const header = document.createElement('div');
+	header.className = 'modal-header';
 
-    const title = document.createElement('span');
-    title.className = 'modal-title';
-    title.textContent = 'Set Content';
+	const title = document.createElement('span');
+	title.className = 'modal-title';
+	title.textContent = 'Set Content';
 
-    const closeButton = document.createElement('button');
-    closeButton.className = 'close-btn';
-    closeButton.setAttribute('onclick', 'closeModal()');
+	const closeButton = document.createElement('button');
+	closeButton.className = 'close-btn';
+	closeButton.setAttribute('onclick', 'closeModal()');
 
-    const closeIcon = document.createElement('img');
-    //closeIcon.setAttribute('src', '../images/close_icon.svg');
-    closeIcon.setAttribute('alt', 'Close');
+	const closeIcon = document.createElement('img');
+	//closeIcon.setAttribute('src', '../images/close_icon.svg');
+	closeIcon.setAttribute('alt', 'Close');
 
-    closeButton.appendChild(closeIcon);
-    header.appendChild(title);
-    header.appendChild(closeButton);
+	closeButton.appendChild(closeIcon);
+	header.appendChild(title);
+	header.appendChild(closeButton);
 
-    return header;
+	return header;
 }
+
 function createModalBody() {
-    const body = document.createElement('div');
-    body.className = 'modal-body';
+	const body = document.createElement('div');
+	body.className = 'modal-body';
 
-    const textArea = document.createElement('textarea');
-    textArea.className = 'text-input';
-    textArea.setAttribute('placeholder', 'Type your content here');
+	const textArea = document.createElement('textarea');
+	textArea.className = 'text-input';
+	textArea.setAttribute('placeholder', 'Type your content here');
 
-    const okButton = document.createElement('button');
-    okButton.className = 'ok-btn';
-    okButton.textContent = 'Ok';
-    okButton.setAttribute('onclick', 'submitContent()');
+	const okButton = document.createElement('button');
+	okButton.className = 'ok-btn';
+	okButton.textContent = 'Ok';
+	okButton.setAttribute('onclick', 'submitContent()');
 
-    body.appendChild(textArea);
-    body.appendChild(okButton);
+	body.appendChild(textArea);
+	body.appendChild(okButton);
 
-    return body;
+	return body;
 }
 
 function createModalContent() {
-    const modalContent = document.createElement('div');
-    modalContent.className = 'modal-content text_dialog_content';
-    modalContent.appendChild(createModalHeader());
-    modalContent.appendChild(createModalBody());
+	const modalContent = document.createElement('div');
+	modalContent.className = 'modal-content text_dialog_content';
+	modalContent.appendChild(createModalHeader());
+	modalContent.appendChild(createModalBody());
 
-    return modalContent;
+	return modalContent;
 }
 function initializeTextDialog() {
-    const modal = document.createElement('div');
-    modal.id = 'textDialog';
-    modal.className = 'modal text_dialog';
-    modal.appendChild(createModalContent());
+	const modal = document.createElement('div');
+	modal.id = 'textDialog';
+	modal.className = 'modal text_dialog';
+	modal.appendChild(createModalContent());
 
-    document.body.appendChild(modal);
+	document.body.appendChild(modal);
 
 	function handleKeyDown(event) {
 		const dlg = document.getElementById('textDialog');
@@ -2024,52 +2020,110 @@ function initializeTextDialog() {
 		});
 	}
 
-    document.addEventListener('mousemove', function (e) {
-        if (!isTextDialogResizing) return;
+	document.addEventListener('mousemove', function (e) {
+		if (!isTextDialogResizing) return;
 		const dlg = document.getElementById('textDialog');
 		const modalContent = dlg.querySelector('.modal-content');
-        const width = modalContent.offsetWidth + (e.clientX - prevX);
-        const height = modalContent.offsetHeight + (e.clientY - prevY);
-        modalContent.style.width = `${width}px`;
-        modalContent.style.height = `${height}px`;
-        prevX = e.clientX;
-        prevY = e.clientY;
-    });
+		const width = modalContent.offsetWidth + (e.clientX - prevX);
+		const height = modalContent.offsetHeight + (e.clientY - prevY);
+		modalContent.style.width = `${width}px`;
+		modalContent.style.height = `${height}px`;
+		prevX = e.clientX;
+		prevY = e.clientY;
+	});
 
-    document.addEventListener('mouseup', function () {
-        isTextDialogResizing = false;
-    });
+	document.addEventListener('mouseup', function () {
+		isTextDialogResizing = false;
+	});
 
-    function openModal() {
-        const dlg = document.getElementById('textDialog');
+	function openModal() {
+		const dlg = document.getElementById('textDialog');
 		dlg.style.display = 'block';
 		const textInput = dlg.querySelector('.text-input');
-        textInput.focus();
+		textInput.focus();
 		if (isSAGEInitialized) {
 			Module._MakeDeaf(1);			
 		}
-    }
+	}
 
-    function closeModal() {
-        const dlg = document.getElementById('textDialog');
+	function closeModal() {
+		const dlg = document.getElementById('textDialog');
 		dlg.style.display = 'none';
 		if (isSAGEInitialized) {
 			Module._MakeDeaf(0);
 		}
-    }
+	}
 
-    window.openModal = openModal;
-    window.closeModal = closeModal;
+	window.openModal = openModal;
+	window.closeModal = closeModal;
 }
-	
+
+function RegisterSAGEChart(domain) {
+	// Find the chart element by its ID
+	const chartBox = document.getElementById(domain);
+	if (!chartBox) {
+		console.error(`Element with ID ${domain} not found.`);
+		return;
+	}
+
+	// Add the "SAGE_chart" class to the element
+	chartBox.classList.add("SAGE_chart");
+
+	if (!chartBox._chartBoxObserver) {
+		// Create a ResizeObserver and observe the chartBox
+		const chartBoxObserver = new ResizeObserver(handleChartBoxResize);
+		chartBoxObserver.observe(chartBox);
+		chartBox._chartBoxObserver = chartBoxObserver;
+	}
+
+	// Add event listeners for mousemove and mousedown
+	if (!chartBox._handleMouseMove) {
+		chartBox.addEventListener('mousemove', handleMouseMove);
+		chartBox._handleMouseMove = handleMouseMove;
+	}
+
+	if (!chartBox._handleMouseDown) {
+		chartBox.addEventListener('mousedown', handleMouseDown);
+		chartBox._handleMouseDown = handleMouseDown;
+	}
+}
+
+function UnregisterSAGEChart(domain) {
+	// Find the chart element by its ID
+	const chartBox = document.getElementById(domain);
+	if (!chartBox) {
+		console.error(`Element with ID ${domain} not found.`);
+		return;
+	}
+
+	// Remove the "SAGE_chart" class from the element
+	chartBox.classList.remove("SAGE_chart");
+
+	// Remove the ResizeObserver
+	if (chartBox._chartBoxObserver) {
+		chartBox._chartBoxObserver.unobserve(chartBox);
+		chartBox._chartBoxObserver = null;
+	}
+
+	// Remove event listeners for mousemove and mousedown
+	if (chartBox._handleMouseMove) {
+		chartBox.removeEventListener('mousemove', chartBox._handleMouseMove);
+		chartBox._handleMouseMove = null;
+	}
+	if (chartBox._handleMouseDown) {
+		chartBox.removeEventListener('mousedown', chartBox._handleMouseDown);
+		chartBox._handleMouseDown = null;
+	}
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-    
+
 	createSAGEContainerWithCanvas('SAGE_canvasGlobalContainer', 'SAGE_mainCanvas');
 	createSAGEOffscreenCanvas('SAGE_textCanvas');
 	createSAGEOffscreenCanvas('SAGE_tooltipCanvas');
 	//initializeTextDialog();
 		
-    {//subscribe to canvas resizing here
+	{//subscribe to canvas resizing here
 		const canvas_container = document.getElementById('SAGE_canvasGlobalContainer');
 		// Create a ResizeObserver
 		const resizeObserver = new ResizeObserver(handleSAGECanvasResize);
@@ -2084,19 +2138,6 @@ document.addEventListener("DOMContentLoaded", function() {
 		//global_canvas.addEventListener('mouseup', handleMouseUp);
 		global_canvas.addEventListener('wheel', blockDefaultInsideChart);//, { passive: false });
 		global_canvas.addEventListener('contextmenu', blockDefaultInsideChart);//, { passive: false });
-	
-		// Get all elements with the "SAGE_chart" class
-		const chartBoxes = document.querySelectorAll('.SAGE_chart');
-		
-		// Create a ResizeObserver for each "SAGE_chart" element
-		chartBoxes.forEach(chartBox => {
-			const chartBoxObserver = new ResizeObserver(handleChartBoxResize);
-			chartBoxObserver.observe(chartBox);
-			
-			chartBox.addEventListener('mousemove', handleMouseMove);
-			chartBox.addEventListener('mousedown', handleMouseDown);
-			//chartBox.addEventListener('mouseup', handleMouseUp);
-		});
 	}
 	
 	initSAGE();
@@ -2112,8 +2153,8 @@ var Module = {
 	canvas: (function() {
 		return getModuleWnd();
 	})(),
-            // Disable keyboard capturing
-    dontCaptureKeyboard: true
+	// Disable keyboard capturing
+	dontCaptureKeyboard: true
 };
 
 //---------------------------------------------------------------------------------------
@@ -2124,13 +2165,13 @@ var mouseState = {
 };
 
 function handleStateMouseDown(event) {
-    if (event.button === 0) {
-        mouseState.left = true;
-    } else if (event.button === 1) {
-        mouseState.middle = true;
-    } else if (event.button === 2) {
-        mouseState.right = true;
-    }
+	if (event.button === 0) {
+		mouseState.left = true;
+	} else if (event.button === 1) {
+		mouseState.middle = true;
+	} else if (event.button === 2) {
+		mouseState.right = true;
+	}
 }
 
 function handleStateMouseUp(event) {
@@ -2155,27 +2196,27 @@ var modifierKeyStates = {
 };
 
 function handleKeyDown(event) {
-    if (event.code === 'AltLeft' || event.code === 'AltRight') {
-        modifierKeyStates.alt = true;
-    }
-    if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
-        modifierKeyStates.ctrl = true;
-    }
-    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-        modifierKeyStates.shift = true;
-    }
+	if (event.code === 'AltLeft' || event.code === 'AltRight') {
+		modifierKeyStates.alt = true;
+	}
+	if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+		modifierKeyStates.ctrl = true;
+	}
+	if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+		modifierKeyStates.shift = true;
+	}
 }
 
 function handleKeyUp(event) {
-    if (event.code === 'AltLeft' || event.code === 'AltRight') {
-        modifierKeyStates.alt = false;
-    }
-    if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
-        modifierKeyStates.ctrl = false;
-    }
-    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-        modifierKeyStates.shift = false;
-    }
+	if (event.code === 'AltLeft' || event.code === 'AltRight') {
+		modifierKeyStates.alt = false;
+	}
+	if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+		modifierKeyStates.ctrl = false;
+	}
+	if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+		modifierKeyStates.shift = false;
+	}
 }
 
 window.addEventListener('keydown', handleKeyDown);
@@ -2184,15 +2225,7 @@ window.addEventListener('keyup', handleKeyUp);
 // Expose modifierKeyStates to Emscripten
 Module['modifierKeyStates'] = modifierKeyStates;
 //---------------------------------------------------------------------------------------
-/*async function getClipboardText() {
-    try {
-        const text = await navigator.clipboard.readText();
-        return text;
-    } catch (err) {
-        console.error('Failed to read clipboard contents: ', err);
-        return '';
-    }
-}*/
+
 
 function getClipboardText(id) {
 	return navigator.clipboard.readText()
@@ -2218,12 +2251,12 @@ function getClipboardText(id) {
 Module['getClipboardText'] = getClipboardText;
 //---------------------------------------------------------------------------------------
 async function setClipboardText(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        console.log('Clipboard text set successfully:', text);
-    } catch (err) {
-        //console.error('Failed to set clipboard text:', err);
-    }
+	try {
+		await navigator.clipboard.writeText(text);
+		console.log('Clipboard text set successfully:', text);
+	} catch (err) {
+		//console.error('Failed to set clipboard text:', err);
+	}
 }
 
 /*function setClipboardText(text) {
@@ -2284,27 +2317,41 @@ function endSAGELoading() {
 	if (loader)
 		loader.classList.add('hidden');
 }
-		
-function setSAGEData(text, add) {
+
+const encoder = new TextEncoder();
+const threadBuffers = new Map(); // Per-thread buffers
+
+function getThreadBuffer(threadId, size) {
+	if (!threadBuffers.has(threadId) || threadBuffers.get(threadId).size < size) {
+		if (threadBuffers.has(threadId)) Module._free(threadBuffers.get(threadId).ptr);
+		const ptr = Module._malloc(size);
+		threadBuffers.set(threadId, { ptr, size });
+	}
+	return threadBuffers.get(threadId).ptr;
+}
+
+function setSAGEData(text, add, threadId = self.threadId) {
 	if (!add) {
 		clearSAGE();
 	}
-		
+
 	if (isSAGEInitialized) {
-		const bufferSize = Module.lengthBytesUTF8(text);
-		const bufferPtr = Module._malloc(bufferSize + 1);
-		Module.stringToUTF8(text, bufferPtr, bufferSize + 1);
+		const encodedText = encoder.encode(text);
+		const bufferPtr = getThreadBuffer(threadId, encodedText.length + 1);
+
+		const buffer = new Uint8Array(Module.HEAPU8.buffer, bufferPtr, encodedText.length + 1);
+		buffer.set(encodedText);
+		buffer[encodedText.length] = 0;
 
 		console.log(`processTextData method started`);
-		// Call the WASM function to process the text data
-		const result = Module.ccall('processTextData', 'number', ['number', 'number'], [bufferPtr, add]);
-		console.log(`processTextData method ended`);
+		// Measure WASM execution time
+		const start = performance.now();
+		const result = Module._processTextData(bufferPtr, add);
+		const end = performance.now();
+		console.log(`processTextData executed in ${(end - start).toFixed(3)} ms`);
 
-		// Free the allocated memory in WASM when done
-		Module._free(bufferPtr);
 		return result;
 	}
-
 	return -1;
 }
 
@@ -2332,6 +2379,57 @@ function getSAGEError(html_friendly) {
 
 	return "SAGE is not initialized";
 }
+function getSAGEValue(query, html_friendly = false) {
+	if (isSAGEInitialized) {
+
+		console.log('getValue query:', query);
+
+		// Get the function from the WebAssembly module
+		//const getTreeValue = Module.cwrap('getTreeValue', 'number', ['number', 'number']);
+
+		const dataPtr = Module._malloc(query.length + 1);
+		Module.stringToUTF8(query, dataPtr, query.length + 1);
+
+		// Allocate memory for the length
+		const lengthPtr = Module._malloc(4);
+
+		// Call the function
+		//const textPtr = getTreeValue(dataPtr, lengthPtr);
+		const textPtr = Module.ccall('getTreeValue', 'number', ['number', 'number'], [dataPtr, lengthPtr]);
+
+		// Read the length
+		const length = Module.HEAP32[lengthPtr >> 2];
+		//const length = Module.getValue(lengthPtr, 'i32');
+
+		// Read the string from memory
+		const result = Module.UTF8ToString(textPtr, length);
+		
+
+		// Free the allocated memory
+		Module._free(lengthPtr);
+		Module._free(textPtr);
+		Module._free(dataPtr);
+
+		// Call the UpdateChartElement function from your WebAssembly module
+		//const result = Module.ccall('getValue', 'number', ['number', 'number'], [dataPtr]);
+		//console.log('getValue result:', result);
+
+		if (html_friendly) {
+			return escapeHtmlSAGE(result);
+		}
+
+		return result;
+	}
+
+	return "SAGE is not initialized";
+}
+
+function getSAGEJsonValue(query) {
+	const jsonString = getSAGEValue(query);
+	// Parse the JSON string to a JavaScript object
+	return JSON.parse(jsonString);
+}
+
 function getSAGEInitialData(){
 	return '';
 }
@@ -2340,7 +2438,7 @@ function loadSAGEContent() {
 		beginSAGELoading();
 		setSAGEData(getSAGEInitialData(), 1);
 		endSAGELoading(); // Hide loading spinner on error
-    });	
+	});	
 }
 
 function sendReq(site, machine, section) {
@@ -2357,10 +2455,10 @@ function onSAGEIntitialized() {
 function onSAGEIntitializedRoutine ()
 {
 	// Start async data loading
-    loadSAGEContent().then(() => {
-        console.log('************* Async loading completed.');
-    }).catch((error) => {
-        console.error('************* Async loading failed:', error);		
+	loadSAGEContent().then(() => {
+		console.log('************* Async loading completed.');
+	}).catch((error) => {
+		console.error('************* Async loading failed:', error);		
 	});
 
 	onSAGEIntitialized();	
