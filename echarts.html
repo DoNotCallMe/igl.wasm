@@ -58,10 +58,10 @@
         <input type="number" id="numPoints" value="10000" min="1">
         
         <label for="numCols">Number of Columns:</label>
-        <input type="number" id="numCols" value="1" min="1">
+        <input type="number" id="numCols" value="4" min="1">
         
         <label for="numRows">Number of Rows:</label>
-        <input type="number" id="numRows" value="1" min="1">
+        <input type="number" id="numRows" value="4" min="1">
         
         <label for="chartType">Chart Type:</label>
         <select id="chartType">
@@ -116,17 +116,19 @@
             document.getElementById('chartsContainer').style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
             document.getElementById('chartsContainer').style.gridTemplateRows = `repeat(${numRows}, 1fr)`;
             
+			let x = Array.from({ length: numPoints }, () => Math.random());
+            let y = Array.from({ length: numPoints }, () => Math.random());
+			let z = Array.from({ length: numPoints }, () => Math.random());
+            let class10 = Array.from({ length: numPoints }, () => Math.floor(Math.random() * 10));
+					
+					
             const startTime = performance.now();
             for (let r = 0; r < numRows; r++) {
                 for (let c = 0; c < numCols; c++) {
                     let chartDiv = document.createElement("div");
                     chartDiv.classList.add("chart");
                     document.getElementById('chartsContainer').appendChild(chartDiv);
-                    
-                    let x = Array.from({ length: numPoints }, () => Math.random());
-                    let y = Array.from({ length: numPoints }, () => Math.random());
-                    let class10 = Array.from({ length: numPoints }, () => Math.floor(Math.random() * 10));
-                    
+
                     let option;
                     if (chartType === "scatter2d") {
                         option = {
@@ -161,8 +163,7 @@
                                 }
                             }]
                         };
-                    } else if (chartType === "scatter3d") {
-                        let z = Array.from({ length: numPoints }, () => Math.random());
+                    } else if (chartType === "scatter3d") {                        
                         option = {
 							animation: false, // Disable animation globally
 							progressive: 0, // Disable progressive rendering

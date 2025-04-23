@@ -12,7 +12,7 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
     
-    <title>SAGE builder 1.2.7</title>
+    <title>SAGE builder</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
@@ -104,7 +104,7 @@
         try {
             const jsonData = JSON.parse(jsonEditor.getValue());
 			const data = JSON.stringify(jsonData, null, 2)
-            if (loadData(data,0) <= 0){
+            if (replaceSAGEChart('mySAGEChart', data) <= 0){
 					error = getSAGEError(true);           
 					// Display the escaped error message in the chart container
 					chartContainer.innerHTML = `<p style="color: red;">${error}</p>`;
@@ -119,8 +119,16 @@
             console.error('JSON Parsing Error:', e); // Log the exception error to the console
             chartContainer.innerHTML = `<p style="color: red;">Invalid JSON: ${e.message}</p>`;
         }
-		//const value = getSAGEJsonValue("Color.Values");
-		//console.log('Color values:', value); // Log the exception error to the console
+		
+		{//getSAGEJsonValue demo 
+			const value = getSAGEJsonValue("Color.Values");
+			console.log('Color values:', value);
+		}
+		
+		{//getSAGEValue demo 
+			const value = getSAGEValue("Color.Values[5]", false, true);
+			console.log('Color values[5]:', value);
+		}
     }
 		
 	function insertJsonNode(jsonEditor, newNode) {

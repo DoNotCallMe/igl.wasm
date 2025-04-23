@@ -57,10 +57,10 @@
         <input type="number" id="numPoints" value="10000" min="1">
         
         <label for="numCols">Number of Columns:</label>
-        <input type="number" id="numCols" value="1" min="1">
+        <input type="number" id="numCols" value="4" min="1">
         
         <label for="numRows">Number of Rows:</label>
-        <input type="number" id="numRows" value="1" min="1">
+        <input type="number" id="numRows" value="4" min="1">
         
         <label for="chartType">Chart Type:</label>
         <select id="chartType">
@@ -119,6 +119,12 @@
             document.getElementById('chartsContainer').style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
             document.getElementById('chartsContainer').style.gridTemplateRows = `repeat(${numRows}, 1fr)`;
             
+			let x = Array.from({ length: numPoints }, () => Math.random());
+            let y = Array.from({ length: numPoints }, () => Math.random());
+			let z = Array.from({ length: numPoints }, () => Math.random());
+            let class10 = Array.from({ length: numPoints }, () => Math.floor(Math.random() * 10));
+					
+					
             const startTime = performance.now();
             for (let r = 0; r < numRows; r++) {
                 for (let c = 0; c < numCols; c++) {
@@ -126,15 +132,10 @@
                     chartDiv.classList.add("chart");
                     document.getElementById('chartsContainer').appendChild(chartDiv);
                     
-                    let x = Array.from({ length: numPoints }, () => Math.random());
-                    let y = Array.from({ length: numPoints }, () => Math.random());
-                    let class10 = Array.from({ length: numPoints }, () => Math.floor(Math.random() * 10));
-                    
                     let data;
                     if (chartType === "scatter2d") {
                         data = [{ x, y, mode: 'markers', type: useWebGL ? 'scattergl' : 'scatter', marker: { color: class10, colorscale: 'Viridis', line: { color: 'black', width: 1 } } }];
-                    } else if (chartType === "scatter3d") {
-                        let z = Array.from({ length: numPoints }, () => Math.random());
+                    } else if (chartType === "scatter3d") {                        
                         data = [{ x, y, z, mode: 'markers', type: 'scatter3d', marker: { color: class10, colorscale: 'Viridis', line: { color: 'black', width: 1 } } }];
                     } else if (chartType === "boxplot") {
                         data = [{ x: class10, y, type: 'box', boxpoints: 'all', marker: { color: class10, colorscale: 'Viridis' } }];
