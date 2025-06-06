@@ -193,9 +193,7 @@ class CModalDialog extends CWindow
         addListener(document, 'mousedown', this.onDocumentMouseDown);
         addListener(this.close_button, 'click', this.close);
 		
-        if (isSAGEInitialized) {
-            Module.ccall('MakeDeaf', 'number', ['number', 'string'], [1,'']);
-		}
+        makeSAGECanvasDeaf(true);
     }
 
     onRemoveElement()
@@ -209,9 +207,7 @@ class CModalDialog extends CWindow
         removeListener(document, 'mousedown', this.onDocumentMouseDown);
         removeListener(this.close_button, 'click', this.close);
 		
-        if (isSAGEInitialized) {
-            Module.ccall('MakeDeaf', 'number', ['number', 'string'], [0,'']);
-		}
+        makeSAGECanvasDeaf(false);
     }
 
 
@@ -287,6 +283,9 @@ class CModalDialog extends CWindow
         const rectangle = this.dialog.getBoundingClientRect();
         var x = e.pageX + window.scrollX;
         var y = e.pageY + window.scrollY;
+
+        console.log('Modal dialog rectangle:', retangle);
+        console.log('Cursor pos: ', x, y);
 
         if (x < rectangle.left || x > rectangle.right || y < rectangle.top || y > rectangle.bottom){
             this.close({reason: "mouseClickOutside"});
@@ -579,6 +578,8 @@ class CColorPicker extends CWindow
         addListener(this.hueSlider, 'input', this.setHue);
         addListener(this.alphaSlider, 'input', this.setAlpha);
         addListener(this.colorValue, 'input', this.setColor);
+
+        makeSAGECanvasDeaf(true);
     }
 
     onRemoveElement(){
@@ -600,6 +601,8 @@ class CColorPicker extends CWindow
         removeListener(this.hueSlider, 'input', this.setHue);
         removeListener(this.alphaSlider, 'input', this.setAlpha);
         removeListener(this.colorValue, 'input', this.setColor);
+
+        makeSAGECanvasDeaf(false);
     }
 
     render()
@@ -1307,9 +1310,8 @@ class ContextMenu {
     }
 
     hideAll() {
-        if (this.main_dom != this.dom) {
-            Module.ccall('MakeDeaf', 'number', ['number', 'string'], [0,'']);
-		}
+        if (this.main_dom != this.dom)
+            makeSAGECanvasDeaf(false);
 		
 		if (this.root && !this.parent) {
             if (this.shown) {
@@ -1340,9 +1342,8 @@ class ContextMenu {
             }
         }
 		
-        if (this.main_dom != this.dom && isSAGEInitialized) {
-            Module.ccall('MakeDeaf', 'number', ['number', 'string'], [0,'']);
-		}
+        if (this.main_dom != this.dom)
+            makeSAGECanvasDeaf(false);
     }
 
     hideSubMenus() {
@@ -1386,9 +1387,7 @@ class ContextMenu {
 			this.main_dom = overlay;
 			
 			// Disable pointer events on the canvas
-			if (isSAGEInitialized) {
-				Module.ccall('MakeDeaf', 'number', ['number', 'string'], [1,'']);
-			}
+			makeSAGECanvasDeaf(true);
 		}
 
 		this.shown = true;		
@@ -1488,8 +1487,19 @@ function openContextMenu(id, xy, jsonData, canvas_name){
 // Flag to track if the mouse button is pressed inside the chart box
 let isSAGEInitialized = false;
 
+function makeSAGECanvasDeaf(flag, canvas_name = '') {
+	//console.log('Chart-box mouse leave');
+	if (isSAGEInitialized) {
+		let value = 0;
+		if (flag)
+			value = 1;
+
+		Module.ccall('MakeDeaf', 'number', ['number', 'string'], [value, canvas_name]);
+	}
+}
+
 //-------------------------------------------------------------------------------
-function CreateSAGECanvas(canvas_name) {
+function createSAGECanvas(canvas_name, owner_id = '') {
 	// Create the container <div>
 	var container = document.createElement('div');
 	container.classList.add('sage_canvas_container');
@@ -1500,6 +1510,7 @@ function CreateSAGECanvas(canvas_name) {
 	canvas.classList.add('sage_canvas');
 	canvas.id = canvas_name;
 	canvas._mouseIsHandled = false;
+	canvas._ownerId = owner_id;
 
 	// Append the canvas to the container
 	container.appendChild(canvas);
@@ -1519,12 +1530,23 @@ function CreateSAGECanvas(canvas_name) {
 		canvas.addEventListener('contextmenu', (event) => blockDefaultInsideChart(event, canvas_name));
 	}
 
+	{
+		var canvas_owner = document.getElementById(owner_id);
+		if (canvas_owner)
+		{//subscribe to canvas resizing here
+			// Create a ResizeObserver
+			const resizeObserver = new ResizeObserver((entries) => handleSAGEOwnerResize(entries, canvas_name));
+			// Observe the canvas element
+			resizeObserver.observe(canvas_owner);
+		}
+	}
+
 	return container;
 }
 
 function addDefaultSAGECanvas(convas_name) {
 	// Append the canvas to the container
-	container = CreateSAGECanvas(convas_name);
+	container = createSAGECanvas(convas_name);
 
 	// Append the container to the document body
 	document.body.appendChild(container);
@@ -1571,6 +1593,10 @@ function handleSAGECanvasResize(entries, canvas_name)
 	var canvas = document.getElementById(canvas_name);
 	if (canvas)
 		updateSAGECanvasHDPI(canvas_name);
+}
+
+function handleSAGEOwnerResize(entries, canvas_name) {
+	updateAllSAGECharts(canvas_name);
 }
 
 let current_chart_id = '';
@@ -1625,9 +1651,7 @@ function handleMouseMove(event, canvas_name) {
 			
 			canvas.style.pointerEvents = 'auto';
 			//console.log('Chart-box mouse enter');
-			if (isSAGEInitialized) {
-				Module.ccall('MakeDeaf', 'number', ['number', 'string'], [0,canvas_name]);
-			}
+			makeSAGECanvasDeaf(false, canvas_name);
 		}
 		else {
 			//console.log('Leave chart window in canvas ', canvas_name);
@@ -1641,9 +1665,7 @@ function handleMouseMove(event, canvas_name) {
 
 			canvas.style.pointerEvents = 'none';
 			//console.log('Chart-box mouse leave');
-			if (isSAGEInitialized) {
-				Module.ccall('MakeDeaf', 'number', ['number', 'string'], [1,canvas_name]);
-			}
+			makeSAGECanvasDeaf(true, canvas_name);
 		}
 	}
 
@@ -1707,19 +1729,9 @@ function setSAGECursor(canvas_name, cursor) {
 }
 
 // Function to handle resizing of "SAGE_chart" elements
-function handleChartBoxResize(entries) {
-	entries.forEach(entry => {
-		var target = entry.target;
-		var newWidth = target.offsetWidth;
-		var newHeight = target.offsetHeight;
-		var chartBoxId = target.id; // Get the ID of the resized element
-		//console.log('Chart-box resized:', chartBoxId, newWidth, newHeight);
-			
-		if (isSAGEInitialized) {
-			// Call the UpdateChartElement function from WebAssembly module
-			var result = Module.ccall('UpdateChartElement', 'number', ['string'], [chartBoxId]);
-			//console.log('UpdateChartElement result:', result, target.id, target._canvasId);
-		}
+function handleSAGEChartBoxResize(entries) {
+	entries.forEach(chartBox => {
+		updateSAGEChartPosition(chartBox);
 	});
 }
 
@@ -1828,17 +1840,13 @@ function initializeTextDialog() {
 		dlg.style.display = 'block';
 		var textInput = dlg.querySelector('.sage_text_input');
 		textInput.focus();
-		if (isSAGEInitialized) {
-			Module.ccall('MakeDeaf', 'number', ['number', 'string'], [1,'']);
-		}
+		makeSAGECanvasDeaf(true);
 	}
 
 	function closeModal() {
 		var dlg = document.getElementById('sage_textDialog');
 		dlg.style.display = 'none';
-		if (isSAGEInitialized) {
-			Module.ccall('MakeDeaf', 'number', ['number', 'string'], [0,'']);
-		}
+		makeSAGECanvasDeaf(false);
 	}
 
 	window.openModal = openModal;
@@ -1859,7 +1867,7 @@ function RegisterSAGEChart(id, canvas_name = 'sage_mainCanvas') {
 
 	if (!chartBox._chartBoxObserver) {
 		// Create a ResizeObserver and observe the chartBox
-		var chartBoxObserver = new ResizeObserver(handleChartBoxResize);
+		var chartBoxObserver = new ResizeObserver(handleSAGEChartBoxResize);
 		chartBoxObserver.observe(chartBox);
 		chartBox._chartBoxObserver = chartBoxObserver;
 
@@ -1885,11 +1893,20 @@ function RegisterSAGEChart(id, canvas_name = 'sage_mainCanvas') {
 	console.log(`Element with ID ${id} registered.`);
 }
 
+function updateAllSAGECharts(canvas_name = '') {
+	// Check positions of all chart elements
+	const chartBoxes = document.querySelectorAll('.SAGE_chart');
+
+	chartBoxes.forEach(chartBox => {
+		if (chartBox._canvasId == canvas_name || canvas_name === '') {
+			updateSAGEChartPosition(chartBox);
+		}
+	});
+}
+
 function observeDOMChanges() {
 	const observer = new MutationObserver(() => {
-		// Check positions of all chart elements
-		const chartElements = document.querySelectorAll('.SAGE_chart');
-		chartElements.forEach(checkChartPosition);
+		updateAllSAGECharts();
 	});
 
 	observer.observe(document.body, {
@@ -1899,19 +1916,19 @@ function observeDOMChanges() {
 	});
 }
 
-function checkChartPosition(chartBox) {
-	const rect = chartBox.getBoundingClientRect();
-	if (chartBox._lastLeft !== rect.left || chartBox._lastTop !== rect.top) {
-		//console.log('Chart-box position changed:', chartBox.id, rect.left, rect.top);
+function updateSAGEChartPosition(chartBox) {
+	if (chartBox) {
+		const rect = chartBox.getBoundingClientRect();
+		if (chartBox._lastLeft !== rect.left || chartBox._lastTop !== rect.top) {
+			//console.log('Chart-box position changed:', chartBox.id, rect.left, rect.top);
 
-		// Update last known position
-		chartBox._lastLeft = rect.left;
-		chartBox._lastTop = rect.top;
+			// Update last known position
+			chartBox._lastLeft = rect.left;
+			chartBox._lastTop = rect.top;
 
-		if (isSAGEInitialized) {
-			// Call the UpdateChartElement function from your WebAssembly module
-			var result = Module.ccall('UpdateChartElement', 'number', ['string'], [chartBox.id]);
-			//console.log('UpdateChartElement result:', result, chartBox.id, chartBox._canvasId);
+			if (isSAGEInitialized) {
+				var result = Module.ccall('UpdateChartElement', 'number', ['string'], [chartBox.id]);
+			}
 		}
 	}
 }
@@ -2183,9 +2200,7 @@ function updateSAGECanvasHDPI(canvas_name) {
 	canvas.height = newHeight;
 
 	if (isSAGEInitialized) {
-		// Call the UpdateChartElement function from your WebAssembly module
 		var result = Module.ccall('ResizeCanvas', 'number', ['number', 'number', 'string'], [newWidth, newHeight, canvas_name]);
-		//console.log('ResizeCanvas result:', result);
 	}
 
 	canvas.style.width = canvas_container.offsetWidth + "px";
@@ -2368,10 +2383,6 @@ function getSAGEValue(query, html_friendly = false, deep = false) {
 		Module._free(lengthPtr);
 		Module._free(textPtr);
 		Module._free(dataPtr);
-
-		// Call the UpdateChartElement function from your WebAssembly module
-		//var result = Module.ccall('getValue', 'number', ['number', 'number'], [dataPtr]);
-		//console.log('getValue result:', result);
 
 		if (html_friendly) {
 			return escapeHtmlSAGE(result);
