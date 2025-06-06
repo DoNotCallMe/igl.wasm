@@ -2,6 +2,11 @@ body {
     background-color: white  !important;
 }
 
+body.modal-open {
+	overflow: hidden; /* Prevent scrolling */
+}
+
+
 .container {
 	display: flex;
 	flex-wrap: wrap;
@@ -47,10 +52,9 @@ body {
 	cursor: pointer;
 }
 
-/* Modal styles */
 .modal {
 	display: none; /* Hidden by default */
-	position: fixed;
+	position: fixed; /* Fixed position to cover the entire viewport */
 	top: 0;
 	left: 0;
 	width: 100%;
@@ -62,19 +66,32 @@ body {
 }
 
 .modal-content {
-	background-color: white;
+	position: relative; /* Reference point for absolute positioning */
+	background-color: #fefefe;
+	margin: 15% auto; /* Centered */
 	padding: 20px;
-	border-radius: 5px;
-	width: 80%;
-	max-width: 800px;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+	border: 1px solid #888;
+	width: 80%; /* Adjust as needed */
+	height: 80%; /* Adjust as needed */
+	box-sizing: border-box; /* Include padding and border in element's total width and height */
+	overflow: hidden; /* Hide overflow to allow resizing */
+	resize: both; /* Allow resizing */
 }
 
 .close-button {
+	position: absolute; /* Position the button absolutely within the modal content */
+	top: 10px; /* Adjust the top position as needed */
+	right: 10px; /* Adjust the right position as needed */
 	background-color: #f44336;
 	color: white;
 	border: none;
 	padding: 10px;
 	cursor: pointer;
-	float: right;
+	z-index: 2; /* Ensure the button is above other content */
+}
+
+.scrollable-content {
+	overflow: auto; /* Enable scrolling for the charts */
+	height: calc(100% - 40px); /* Adjust height to account for the close button */
+	margin-top: 40px; /* Ensure content starts below the close button */
 }

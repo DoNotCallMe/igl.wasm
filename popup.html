@@ -24,13 +24,15 @@
 
 	<!-- Modal for charts -->
 	<div id="chartsModal" class="modal">
-		<div class="modal-content">
+		<div id="modalContent" class="modal-content">
 			<button class="close-button" onclick="closeModal()">Close</button>
-			<div id="modalChartsContainer"></div>
+			<div id="modalChartsContainer" class="scrollable-content"></div>
 		</div>
 	</div>
 
 	<script>
+
+		var number_of_popup_charts = 4;
 
 		function getSAGEWASMPath() {
 			return "./sage/sage_wasm.js";
@@ -44,7 +46,7 @@
 			var number_of_charts = getSAGENumberOfCharts();
 			var container = document.querySelector('.container');
 
-			for (var i = 2; i < number_of_charts; i++) {
+			for (var i = number_of_popup_charts; i < number_of_charts; i++) {
 				var id = getSAGEChartDomain(i);
 				//console.log('Chart #${i}: ${value}');
 
@@ -69,7 +71,16 @@
 		let modal_context_id = 'ModalSAGECanvas';
 		if (!document.getElementById(modal_context_id)) {
 			var chartsModal = document.getElementById('chartsModal');
-			chartsModal.appendChild(CreateSAGECanvas(modal_context_id));
+			chartsModal.appendChild(createSAGECanvas(modal_context_id, 'modalChartsContainer'));
+
+			var modalContent = document.getElementById('modalChartsContainer');
+			if (modalContent) {
+				modalContent.addEventListener('scroll', function (event) {
+					updateAllSAGECharts();
+				});
+			} else {
+				console.error('Modal content element not found');
+			}
 		}
 
 		// Function to open the modal with the first three charts
@@ -78,7 +89,7 @@
 			var modalContainer = document.getElementById('modalChartsContainer');
 			modalContainer.innerHTML = ''; // Clear previous content
 			
-			for (var i = 0; i < Math.min(2, number_of_charts); i++) {
+			for (var i = 0; i < Math.min(number_of_popup_charts, number_of_charts); i++) {
 				var id = getSAGEChartDomain(i);
 
 				// Create a new chart container div
@@ -99,11 +110,15 @@
 			}
 
 			document.getElementById('chartsModal').style.display = 'flex';
+			document.body.classList.add('modal-open'); // Add class to prevent scrolling
+			makeSAGECanvasDeaf(true, 'sage_mainCanvas');
 		}
 
 		// Function to close the modal
 		function closeModal() {
 			document.getElementById('chartsModal').style.display = 'none';
+			document.body.classList.remove('modal-open'); // Remove class to allow scrolling
+			makeSAGECanvasDeaf(false, 'sage_mainCanvas');
 		}
 
 		// Add event listener to the button
