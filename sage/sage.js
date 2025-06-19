@@ -1486,6 +1486,7 @@ function openContextMenu(id, xy, jsonData, canvas_name){
  
 // Flag to track if the mouse button is pressed inside the chart box
 let isSAGEInitialized = false;
+let sageDataCache = '';
 
 function makeSAGECanvasDeaf(flag, canvas_name = '') {
 	//console.log('Chart-box mouse leave');
@@ -1730,8 +1731,8 @@ function setSAGECursor(canvas_name, cursor) {
 
 // Function to handle resizing of "SAGE_chart" elements
 function handleSAGEChartBoxResize(entries) {
-	entries.forEach(chartBox => {
-		updateSAGEChartPosition(chartBox);
+	entries.forEach(entry => {
+		updateSAGEChartPosition(entry.target);
 	});
 }
 
@@ -1919,15 +1920,16 @@ function observeDOMChanges() {
 function updateSAGEChartPosition(chartBox) {
 	if (chartBox) {
 		const rect = chartBox.getBoundingClientRect();
-		if (chartBox._lastLeft !== rect.left || chartBox._lastTop !== rect.top) {
-			//console.log('Chart-box position changed:', chartBox.id, rect.left, rect.top);
+		if (chartBox._lastLeft !== rect.left || chartBox._lastTop !== rect.top || chartBox._lastWidth !== rect.width || chartBox._lastHeight !== rect.height) {
 
 			// Update last known position
 			chartBox._lastLeft = rect.left;
 			chartBox._lastTop = rect.top;
+			chartBox._lastWidth = rect.width;
+			chartBox._lastHeight = rect.height;
 
 			if (isSAGEInitialized) {
-				var result = Module.ccall('UpdateChartElement', 'number', ['string'], [chartBox.id]);
+				Module.ccall('UpdateChartElement', 'number', ['string'], [chartBox.id]);
 			}
 		}
 	}
@@ -2052,9 +2054,15 @@ window.addEventListener('keyup', handleKeyUp);
 Module['modifierKeyStates'] = modifierKeyStates;
 //---------------------------------------------------------------------------------------
 function getSAGEClipboardText(id) {
+
+	if (!navigator.clipboard) {
+		alert('Clipboard API is not supported in this browser. Please ensure you are using a modern browser, and that the site is served over HTTPS.');
+		return;
+	}
+
 	return navigator.clipboard.readText()
 		.then(text => {
-			console.log('Clipboard text reading was finished successfully:', text);
+			//console.log('Clipboard text reading was finished successfully:', text);
 
 			var bufferSize = Module.lengthBytesUTF8(text);
 			var bufferPtr = Module._malloc(bufferSize + 1);
@@ -2067,17 +2075,25 @@ function getSAGEClipboardText(id) {
 			Module._free(bufferPtr);
 		})
 		.catch(err => {
-			console.error('Failed to read clipboard contents:', err);
+			console.error('Failed to read text from clipboard: ' + err.message);
 		});
 }
 //---------------------------------------------------------------------------------------
 async function setSAGEClipboardText(text) {
-	try {
-		await navigator.clipboard.writeText(text);
-		console.log('Clipboard text set successfully:', text);
-	} catch (err) {
-		//console.error('Failed to set clipboard text:', err);
+
+	if (!navigator.clipboard) {
+		alert('Clipboard API is not supported in this browser. Please ensure you are using a modern browser, and that the site is served over HTTPS.');
+		return;
 	}
+
+	navigator.clipboard
+		.writeText(text)
+		.then(() => {
+			console.log('Clipboard text was copied successfully');
+		})
+		.catch(err => {
+			alert('Failed to copy a text sample to clipboard: ' + err.message);
+		});
 }
 //---------------------------------------------------------------------------------------
 function createSAGEClipboardCanvas(canvas_name, width, height) {
@@ -2103,87 +2119,94 @@ function deleteSAGEClipboardCanvas(canvas_name) {
 }
 
 async function processSAGEClipboardImage(width, height, rgbaArrayJS) {
-	try {
-		// Get the current device pixel ratio
-		const pixelRatio = window.devicePixelRatio || 1;
-
-		// Calculate new dimensions based on the device pixel ratio
-		const newWidth = Math.floor(width * pixelRatio);
-		const newHeight = Math.floor(height * pixelRatio);
-
-		// Create a canvas element for the enlarged image
-		const enlargedCanvas = document.createElement('canvas');
-		enlargedCanvas.width = newWidth;
-		enlargedCanvas.height = newHeight;
-		const enlargedContext = enlargedCanvas.getContext('2d');
-
-		// Create ImageData for the enlarged image
-		const enlargedImageData = enlargedContext.createImageData(newWidth, newHeight);
-
-		// Process each pixel in the enlarged canvas using bilinear interpolation
-		for (let y = 0; y < newHeight; y++) {
-			for (let x = 0; x < newWidth; x++) {
-				// Calculate the position in the original image
-				const srcX = x / pixelRatio;
-				const srcY = y / pixelRatio;
-
-				// Get the integer and fractional parts
-				const x0 = Math.floor(srcX);
-				const y0 = Math.floor(srcY);
-				const x1 = Math.min(x0 + 1, width - 1);
-				const y1 = Math.min(y0 + 1, height - 1);
-				const dx = srcX - x0;
-				const dy = srcY - y0;
-
-				// Interpolate the colors
-				const interpolate = (c00, c10, c01, c11) => {
-					return c00 * (1 - dx) * (1 - dy) +
-						c10 * dx * (1 - dy) +
-						c01 * (1 - dx) * dy +
-						c11 * dx * dy;
-				};
-
-				const index00 = (y0 * width + x0) * 4;
-				const index10 = (y0 * width + x1) * 4;
-				const index01 = (y1 * width + x0) * 4;
-				const index11 = (y1 * width + x1) * 4;
-
-				const r = interpolate(rgbaArrayJS[index00], rgbaArrayJS[index10], rgbaArrayJS[index01], rgbaArrayJS[index11]);
-				const g = interpolate(rgbaArrayJS[index00 + 1], rgbaArrayJS[index10 + 1], rgbaArrayJS[index01 + 1], rgbaArrayJS[index11 + 1]);
-				const b = interpolate(rgbaArrayJS[index00 + 2], rgbaArrayJS[index10 + 2], rgbaArrayJS[index01 + 2], rgbaArrayJS[index11 + 2]);
-				const a = interpolate(rgbaArrayJS[index00 + 3], rgbaArrayJS[index10 + 3], rgbaArrayJS[index01 + 3], rgbaArrayJS[index11 + 3]);
-
-				const index = (y * newWidth + x) * 4;
-				enlargedImageData.data[index] = r;
-				enlargedImageData.data[index + 1] = g;
-				enlargedImageData.data[index + 2] = b;
-				enlargedImageData.data[index + 3] = a;
-			}
-		}
-
-		// Put the processed image data into the enlarged canvas
-		enlargedContext.putImageData(enlargedImageData, 0, 0);
-
-		// Convert the enlarged canvas content to a Blob
-		const blob = await new Promise((resolve, reject) => {
-			enlargedCanvas.toBlob((blob) => {
-				if (blob) {
-					resolve(blob);
-				} else {
-					reject(new Error('Failed to convert enlarged canvas to Blob.'));
-				}
-			}, 'image/png');
-		});
-
-		// Create a ClipboardItem with the Blob
-		const clipboardItem = new ClipboardItem({ 'image/png': blob });
-
-		// Write the ClipboardItem to the clipboard
-		await navigator.clipboard.write([clipboardItem]);
-		console.log('Clipboard image set successfully.');
-	} catch (err) {
-		console.error('Failed to copy enlarged image to clipboard:', err);
+	if (!navigator.clipboard || !window.ClipboardItem) {
+		alert('Clipboard API is not supported in this browser. Please ensure you are using a modern browser, and that the site is served over HTTPS.');
+		return;
 	}
+
+	// Get the current device pixel ratio
+	const pixelRatio = window.devicePixelRatio || 1;
+
+	// Calculate new dimensions based on the device pixel ratio
+	const newWidth = Math.floor(width * pixelRatio);
+	const newHeight = Math.floor(height * pixelRatio);
+
+	// Create a canvas element for the enlarged image
+	const enlargedCanvas = document.createElement('canvas');
+	enlargedCanvas.width = newWidth;
+	enlargedCanvas.height = newHeight;
+	const enlargedContext = enlargedCanvas.getContext('2d');
+
+	// Create ImageData for the enlarged image
+	const enlargedImageData = enlargedContext.createImageData(newWidth, newHeight);
+
+	// Process each pixel in the enlarged canvas using bilinear interpolation
+	for (let y = 0; y < newHeight; y++) {
+		for (let x = 0; x < newWidth; x++) {
+			// Calculate the position in the original image
+			const srcX = x / pixelRatio;
+			const srcY = y / pixelRatio;
+
+			// Get the integer and fractional parts
+			const x0 = Math.floor(srcX);
+			const y0 = Math.floor(srcY);
+			const x1 = Math.min(x0 + 1, width - 1);
+			const y1 = Math.min(y0 + 1, height - 1);
+			const dx = srcX - x0;
+			const dy = srcY - y0;
+
+			// Interpolate the colors
+			const interpolate = (c00, c10, c01, c11) => {
+				return c00 * (1 - dx) * (1 - dy) +
+					c10 * dx * (1 - dy) +
+					c01 * (1 - dx) * dy +
+					c11 * dx * dy;
+			};
+
+			const index00 = (y0 * width + x0) * 4;
+			const index10 = (y0 * width + x1) * 4;
+			const index01 = (y1 * width + x0) * 4;
+			const index11 = (y1 * width + x1) * 4;
+
+			const r = interpolate(rgbaArrayJS[index00], rgbaArrayJS[index10], rgbaArrayJS[index01], rgbaArrayJS[index11]);
+			const g = interpolate(rgbaArrayJS[index00 + 1], rgbaArrayJS[index10 + 1], rgbaArrayJS[index01 + 1], rgbaArrayJS[index11 + 1]);
+			const b = interpolate(rgbaArrayJS[index00 + 2], rgbaArrayJS[index10 + 2], rgbaArrayJS[index01 + 2], rgbaArrayJS[index11 + 2]);
+			const a = interpolate(rgbaArrayJS[index00 + 3], rgbaArrayJS[index10 + 3], rgbaArrayJS[index01 + 3], rgbaArrayJS[index11 + 3]);
+
+			const index = (y * newWidth + x) * 4;
+			enlargedImageData.data[index] = r;
+			enlargedImageData.data[index + 1] = g;
+			enlargedImageData.data[index + 2] = b;
+			enlargedImageData.data[index + 3] = a;
+		}
+	}
+
+	// Put the processed image data into the enlarged canvas
+	enlargedContext.putImageData(enlargedImageData, 0, 0);
+
+	// Convert the enlarged canvas content to a Blob
+	const blob = await new Promise((resolve, reject) => {
+		enlargedCanvas.toBlob((blob) => {
+			if (blob) {
+				resolve(blob);
+			} else {
+				reject(new Error('Failed to convert enlarged canvas to Blob.'));
+			}
+		}, 'image/png');
+	});
+
+	// Create a ClipboardItem with the Blob
+	const clipboardItem = new ClipboardItem({ 'image/png': blob });
+
+	// Write the ClipboardItem to the clipboard
+	navigator.clipboard
+		.write([clipboardItem])
+		.then(() => {
+			console.log('An image was copied successfully');
+		})
+		.catch(err => {
+			alert('Failed to set clipboard image: ' + err.message);
+		});
 }
 //---------------------------------------------------------------------------------------
 function updateSAGECanvasHDPI(canvas_name) {
@@ -2200,7 +2223,7 @@ function updateSAGECanvasHDPI(canvas_name) {
 	canvas.height = newHeight;
 
 	if (isSAGEInitialized) {
-		var result = Module.ccall('ResizeCanvas', 'number', ['number', 'number', 'string'], [newWidth, newHeight, canvas_name]);
+		Module.ccall('ResizeCanvas', 'number', ['number', 'number', 'string'], [newWidth, newHeight, canvas_name]);
 	}
 
 	canvas.style.width = canvas_container.offsetWidth + "px";
@@ -2302,6 +2325,8 @@ function setSAGEData(text, add, threadId = self.threadId) {
 		clearSAGE();
 	}
 
+	sageDataCache = '';
+
 	if (isSAGEInitialized) {
 		var encodedText = encoder.encode(text);
 		var bufferPtr = getThreadBuffer(threadId, encodedText.length + 1);
@@ -2329,6 +2354,9 @@ function setSAGEData(text, add, threadId = self.threadId) {
 		console.log(`processTextData executed in ${(end - start).toFixed(3)} ms`);
 
 		return result;
+	}
+	else {
+		sageDataCache = text;
 	}
 	return -1;
 }
@@ -2401,7 +2429,7 @@ function getSAGEJsonValue(query, deep = false) {
 }
 
 function getSAGEInitialData(){
-	return '';
+	return sageDataCache;
 }
 
 function loadSAGEContent() {
