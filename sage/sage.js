@@ -13,7 +13,7 @@ function wndToScreen(item, wnd){
 //@param {string} type Event type.
 //@param {(string|function)} selector Event target if delegation is used, event handler if not.
 //@param {function} [fn] Event handler if delegation is used.
-function addListener(context, type, selector, fn) {
+function addListener(context, type, selector, fn, options) {
     if (!context)
         return;
     var matches = Element.prototype.matches || Element.prototype.msMatchesSelector;
@@ -21,14 +21,14 @@ function addListener(context, type, selector, fn) {
     if (typeof selector === 'string') {
         context.addEventListener(type, function (event) {
             if (matches.call(event.target, selector)) {
-            fn.call(event.target, event);
+                fn.call(event.target, event);
             }
-        });
+        }, options);
         // If the selector is not a string then it's a function
         // in which case we need regular event listener
     } else {
         fn = selector;
-        context.addEventListener(type, fn);
+        context.addEventListener(type, fn, options);
     }
 }
 
@@ -56,7 +56,7 @@ function removeListener(context, type, selector, fn) {
     }
 }
 
-class CWindow 
+class CSAGEWindow 
 {
     window_settings = {
         theme: 'light',
@@ -112,50 +112,46 @@ class CWindow
         return this.parent;
     }
 
-    getId()
-    {
-        return this.parent;
-    }
-
     close(result)
     {
         this.getElement().dispatchEvent(new CustomEvent('window:close', { detail: result }));
     }
 }
 
-class CModalDialog extends CWindow 
+class CSAGEModalDialog extends CSAGEWindow 
 {
     modal_settings = {
         title: '',
     }
 
-    constructor(window, rectangle, target) {
+    constructor(window, id) {
 
         super();
 
         this.window_settings.theme = 'no';
-
-        this.target = target;
-        this.targetRectangle = rectangle;
+        this.content_id = id;
         this.content_window = window;
+        this.dialog = null; // Initialize dialog reference
+        this.content = null; // Initialize content reference
     }
 
     render(){
         this.dialog = super.render();
-        this.dialog.className = 'sage_modal_window';
+
+        this.dialog.classList.add('sage_modal_dialog');
 
         {
             var titlebar = document.createElement('div');
-            titlebar.className = 'sage_modal_titlebar';
+            titlebar.classList.add('sage_modal_titlebar');
     
             {
                 var title = document.createElement('span');
-                title.className = 'sage_modal_title';
+                title.classList.add('sage_modal_title');
                 title.textContent = this.modal_settings.title;
                 titlebar.appendChild(title);
 
                 this.close_button = document.createElement('button');
-                this.close_button.className = 'sage_button_close';
+                this.close_button.classList.add('sage_button_close');
 				this.close_button.textContent = '\u00D7'; // Unicode for multiplication sign (×)
 
                 titlebar.appendChild(this.close_button);
@@ -164,14 +160,15 @@ class CModalDialog extends CWindow
             this.dialog.appendChild(titlebar);
         }
 
+
         {
             this.content = document.createElement('div');
-            this.content.className = 'sage_modal_content';
+            this.content.classList.add('sage_modal_content');
             this.dialog.appendChild(this.content);
         }
 
         var overlay = document.createElement('div');
-        overlay.className = 'sage_modal_overlay';
+        overlay.classList.add('sage_modal_overlay');
 		overlay.appendChild(this.dialog);
         
 
@@ -181,18 +178,27 @@ class CModalDialog extends CWindow
     onAddElement()
     {
         super.onAddElement();
-        this.content_window.add(this.content, 'sage_color_picker')
+
+        this.content_window.add(this.content, this.content_id)
 
         this.onDocumentKeyDown = this.onDocumentKeyDown.bind(this);
-        this.onDocumentMouseDown = this.onDocumentMouseDown.bind(this);
         this.close = this.close.bind(this);
+        //this.blockScroll = this.blockScroll.bind(this);
 
 		addListener(document, 'contextmenu', this.onContextMenu);
         addListener(document, 'keydown', this.onDocumentKeyDown);
         addListener(this.content_window.getElement(), 'window:close', this.close);
-        addListener(document, 'mousedown', this.onDocumentMouseDown);
         addListener(this.close_button, 'click', this.close);
-		
+
+        // Assuming overlay is your overlay DOM element
+        var overlay = document.querySelector('.sage_modal_overlay');        
+        // Add the event listener to the overlay element
+        overlay.addEventListener('wheel', this.preventScroll, { passive: false });
+        // Optionally, add listeners for other scroll-related events if needed
+        overlay.addEventListener('touchmove', this.preventScroll, { passive: false });
+        overlay.addEventListener('scroll', this.preventScroll, { passive: false });
+
+        
         makeSAGECanvasDeaf(true);
     }
 
@@ -204,73 +210,17 @@ class CModalDialog extends CWindow
 		removeListener(document, 'contextmenu', this.onContextMenu);
         removeListener(document, 'keydown', this.onDocumentKeyDown);
         removeListener(this.content_window.getElement(), 'window:close', this.close);
-        removeListener(document, 'mousedown', this.onDocumentMouseDown);
         removeListener(this.close_button, 'click', this.close);
-		
+
+        // Assuming overlay is your overlay DOM element
+        var overlay = document.querySelector('.sage_modal_overlay');
+        // Add the event listener to the overlay element
+        overlay.removeEventListener('wheel', this.preventScroll, { passive: false });
+        // Optionally, add listeners for other scroll-related events if needed
+        overlay.removeEventListener('touchmove', this.preventScroll, { passive: false });
+        overlay.removeEventListener('scroll', this.preventScroll, { passive: false });
+
         makeSAGECanvasDeaf(false);
-    }
-
-
-    updatePositionRoutine()
-    {
-        var target = this.target;
-        var rectangle = wndToScreen(this.targetRectangle, target);
-        var scrollY = window.scrollY;
-
-        var dialog = this.dialog;
-
-        var dialogWidth = dialog.offsetWidth;
-        var dialogHeight = dialog.offsetHeight;
-        var reposition = { left: false, top: false };
-        var parentStyle, parentMarginTop, parentBorderTop;
-        //var offset = { x: 0, y: 0 };
-
-        if (target)
-        {
-            parentStyle = window.getComputedStyle(target); 
-            parentMarginTop = parseFloat(parentStyle.marginTop);
-            parentBorderTop = parseFloat(parentStyle.borderTopWidth);
-        }
-
-       
-        var left = rectangle.x;
-        var top = scrollY + rectangle.y + rectangle.height + this.window_settings.margin;
-
-        // If the color picker is inside a custom container
-        // set the position relative to it
-        if (target)
-        {
-            if (left + dialogWidth > target.clientWidth)
-            {
-                left += rectangle.width - dialogWidth;
-                reposition.left = true;
-            }
-
-            if (top + dialogHeight > target.clientHeight - parentMarginTop)
-            {
-                top -= rectangle.height + dialogHeight + this.window_settings.margin * 2;
-                reposition.top = true;
-            }
-
-            top += target.scrollTop;
-        }
-        else
-        {
-            if (left + dialogWidth > document.documentElement.clientWidth)
-            {
-                left += rectangle.width - dialogWidth;
-                reposition.left = true;
-            }
-
-            if (top + dialogHeight - scrollY > document.documentElement.clientHeight)
-            {
-                top = scrollY + rectangle.y - dialogHeight - this.window_settings.margin;
-                reposition.top = true;
-            }
-        }
-
-        this.getElement().style.left = left + "px";
-        this.getElement().style.top = top + "px";
     }
 
     onDocumentKeyDown(e) {
@@ -279,23 +229,15 @@ class CModalDialog extends CWindow
         }
     }
 
-    onDocumentMouseDown(e) {
-        const rectangle = this.dialog.getBoundingClientRect();
-        var x = e.pageX + window.scrollX;
-        var y = e.pageY + window.scrollY;
-
-        console.log('Modal dialog rectangle:', retangle);
-        console.log('Cursor pos: ', x, y);
-
-        if (x < rectangle.left || x > rectangle.right || y < rectangle.top || y > rectangle.bottom){
-            this.close({reason: "mouseClickOutside"});
-        }        
-    }
-	
 	onContextMenu(e) {
         e.preventDefault();
 		e.stopPropagation();
-	}
+    }
+
+    preventScroll(e) {
+        e.preventDefault();  // Prevent the default scroll behavior
+        e.stopPropagation(); // Stop the event from propagating further
+    }
 } 
 //Convert HSVA to RGBA.
 //@param {object} hsva Hue, saturation, value and alpha values.
@@ -452,8 +394,7 @@ function getColorFormatFromStr(str)
   return 'hex';
 }
 
-
-class CColorPicker extends CWindow 
+class CColorPicker extends CSAGEWindow 
 {
     // Default settings
     settings = {
@@ -481,7 +422,7 @@ class CColorPicker extends CWindow
         inline: false,
         cancelButton: 
         {
-            show: false,
+            show: true,
             label: 'Cancel' 
         },
 
@@ -578,8 +519,6 @@ class CColorPicker extends CWindow
         addListener(this.hueSlider, 'input', this.setHue);
         addListener(this.alphaSlider, 'input', this.setAlpha);
         addListener(this.colorValue, 'input', this.setColor);
-
-        makeSAGECanvasDeaf(true);
     }
 
     onRemoveElement(){
@@ -601,30 +540,26 @@ class CColorPicker extends CWindow
         removeListener(this.hueSlider, 'input', this.setHue);
         removeListener(this.alphaSlider, 'input', this.setAlpha);
         removeListener(this.colorValue, 'input', this.setColor);
-
-        makeSAGECanvasDeaf(false);
     }
 
     render()
     {
         //picker
         var picker = super.render();
-        picker.className = 'sage_color_picker';
-        //parent.appendChild(picker);
-
+        picker.classList.add('sage_color_picker');
         
         {//colorArea
             var div = document.createElement('div');
             div.id = 'sage_color_area';
             div.ariaLabel = this.settings.a11y.instruction;
-            div.className = 'sage_color_gradient';            
+            div.classList.add('sage_color_gradient');
 
             {
                 //colorMarker
                 var marker = document.createElement('div');
                 marker.id = 'sage_color_marker';
                 marker.tabIndex = 0;
-                marker.className = 'sage_color_marker';
+                marker.classList.add('sage_color_marker');
                 div.appendChild(marker);
             }
 
@@ -633,7 +568,7 @@ class CColorPicker extends CWindow
 
         {//hue
             var div = document.createElement('div');
-            div.className = 'sage_color_hue';
+            div.classList.add('sage_color_hue');
            
             {
                 //hueSlider
@@ -658,7 +593,7 @@ class CColorPicker extends CWindow
         if (this.settings.alpha)
         {//alpha
             var div = document.createElement('div');
-            div.className = 'sage_color_alpha';
+            div.classList.add('sage_color_alpha');
 
             {
                 //alphaSlider
@@ -685,14 +620,14 @@ class CColorPicker extends CWindow
 
         {
             var div = document.createElement('div');
-            div.className = 'sage_color_preview_row';
+            div.classList.add('sage_color_preview_row');
 
             {//colorPreview
                 var button = document.createElement('button');
                 button.id = 'sage_color_preview';
                 button.type = 'button';
                 button.ariaLabel = this.settings.a11y.close;
-                button.className = 'sage_color_preview';
+                button.classList.add('sage_color_preview');
                 button.innerText =  this.settings.a11y.close;
                 div.appendChild(button);
             }
@@ -702,7 +637,7 @@ class CColorPicker extends CWindow
                 input.id = 'sage_color_input';
                 input.spellcheck = false;
                 input.ariaLabel = this.settings.a11y.input;
-                input.className = 'sage_color_input';
+                input.classList.add('sage_color_input');
                 input.value = this.color;
                 div.appendChild(input);
             }           
@@ -713,7 +648,7 @@ class CColorPicker extends CWindow
         if (this.settings.swatches.length > 0)
         {
             var div = document.createElement('div');
-            div.className = 'sage_color_swatches';
+            div.classList.add('sage_color_swatches');
 
             this.settings.swatches.forEach(function (swatch, i) {
 
@@ -721,34 +656,35 @@ class CColorPicker extends CWindow
                 button.id = 'sage_color_swatch_' + i;
                 button.setAttribute('style', 'color: ' + swatch);
                 button.innerText = swatch;
-                button.className = 'sage_color_swatch';
+                button.classList.add('sage_color_swatch');
                 div.appendChild(button);
             });
   
             picker.appendChild(div);
         }
 
-        if (this.settings.cancelButton.show || this.settings.applyButton.show)
-        {
+        if (this.settings.cancelButton.show || this.settings.applyButton.show) {
             var div = document.createElement('div');
-            div.className = 'sage_color_button_row';
+            div.classList.add('sage_button_row');
 
-            if (this.settings.cancelButton.show)
-            {//cancelButton
+            if (this.settings.cancelButton.show) {//cancelButton
                 var button = document.createElement('button');
                 button.id = 'sage_color_clear';
                 button.type = 'button';
-                button.className = 'sage_color_clear';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText =  this.settings.cancelButton.label;
                 div.appendChild(button);
             }
 
-            if (this.settings.applyButton.show)
-            {//applyButton
+            if (this.settings.applyButton.show) {//applyButton
                 var button = document.createElement('button');
                 button.id = 'sage_color_apply';
                 button.type = 'button';
-                button.className = 'sage_color_apply';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText =  this.settings.applyButton.label;
                 div.appendChild(button);
             }
@@ -1070,12 +1006,11 @@ function onChangeColor(e) {
     console.log("openColorDialog function " + e.detail.color);
 }
 
-function openColorDialog(id, title, rectangle, color, canvas_name) {
+function openColorDialog(id, title, rectangle, color) {
     if (!COLOR_DIALOG) {
-        var canvas = document.getElementById(canvas_name);
-        var container = document.body;// getElementById(canvas_name + 'Container');
-        if (canvas && container) {
-            COLOR_DIALOG = new CModalDialog(new CColorPicker(id, color), rectangle, canvas);
+        var container = document.body;
+        if (container) {
+            COLOR_DIALOG = new CSAGEModalDialog(new CColorPicker(id, color), 'sage_color_picker', rectangle);
             COLOR_DIALOG.modal_settings.title = title;
             COLOR_DIALOG.add(container, 'sage_color_dialog');
 
@@ -1091,7 +1026,9 @@ function closeColorDialog() {
         removeListener(COLOR_DIALOG.getElement(), 'window:close', closeColorDialog);
 
         COLOR_DIALOG.remove();
-        Module.ccall('ModifyColor', 'number', ['number', 'string'], [COLOR_DIALOG.content_window.modifierId, COLOR_DIALOG.content_window.newColor]);        
+        if (isSAGEInitialized) {
+            Module.ccall('ModifyColor', 'number', ['number', 'string'], [COLOR_DIALOG.content_window.modifierId, COLOR_DIALOG.content_window.newColor]);
+        }
         COLOR_DIALOG = null;
     }
 } 
@@ -1131,8 +1068,6 @@ class ContextMenu {
 				//e.target.parentElement != this.main_dom && 
                 !e.target.classList.contains('sage_item') && 
                 !e.target.parentElement.classList.contains('sage_item')) {
-				//this.hideAll();
-				//this.show(e.clientX, e.clientY, true);
                 closeContextMenu();
             }
         };
@@ -1174,15 +1109,35 @@ class ContextMenu {
 
         item.classList.add('sage_item');
 
-		const item_mark = document.createElement('span');
-		item_mark.classList.add('sage_check_mark');
-		item_mark.textContent = '\u2713';// Unicode for check mark
-  
-        if (!data.hasOwnProperty('checked') || !data.checked) {
-			item_mark.style.display = 'none';
-		}
-		item.appendChild(item_mark);
+        // Create a container for the image or check mark
+        const item_mark_container = document.createElement('span');
+        item_mark_container.classList.add('sage_item_mark_container');
 
+        let imageCanvas;
+        if (data.hasOwnProperty('image')) {
+            imageCanvas = createSAGEImageElement(data.image);
+            imageCanvas.classList.add('sage_image');
+
+            if (data.hasOwnProperty('checked') && data.checked) {
+                imageCanvas.classList.add('sage_checked');
+            }
+
+            item_mark_container.appendChild(imageCanvas);
+        } else {
+            const item_mark = document.createElement('span');
+            item_mark.classList.add('sage_check_mark');
+            item_mark.textContent = '\u2713'; // Unicode for check mark
+
+            if (!data.hasOwnProperty('checked') || !data.checked) {
+                item_mark.style.display = 'none';
+            }
+
+            item_mark_container.appendChild(item_mark);
+        }
+
+        item.appendChild(item_mark_container);
+
+        // Create a label
 		const label = document.createElement('span');
 		label.classList.add('sage_label');
 		label.innerText = data.hasOwnProperty('text') ? data.text.toString() : '';
@@ -1217,11 +1172,13 @@ class ContextMenu {
 
                 this.hideSubMenus();
 
-                const x = this.dom.offsetLeft + this.dom.clientWidth + item.offsetLeft;
-                const y = this.dom.offsetTop + item.offsetTop;
+                const left = this.dom.offsetLeft + item.offsetLeft;
+                const right = left + item.clientWidth;
+                const top = this.dom.offsetTop + item.offsetTop;
+                const bottom = top + item.clientHeight;
 
                 if (!menu.shown) {
-                    menu.show(x, y, false);
+                    menu.show(left, right, top, bottom, false);
                 } else {
                     menu.hide();
                 }
@@ -1249,11 +1206,13 @@ class ContextMenu {
 
                 this.hideSubMenus();
 
-                const x = this.dom.offsetLeft + this.dom.clientWidth + item.offsetLeft;
-                const y = this.dom.offsetTop + item.offsetTop;
+                const left = this.dom.offsetLeft + item.offsetLeft;
+                const right = left + item.clientWidth;
+                const top = this.dom.offsetTop + item.offsetTop;
+                const bottom = top + item.clientHeight;
 
                 if (!menu.shown) {
-                    menu.show(x, y, false);
+                    menu.show(left, right, top, bottom, false);
                 } else {
                     menu.hide();
                 }
@@ -1293,7 +1252,9 @@ class ContextMenu {
                     }
                 } else {
 					if (data.hasOwnProperty('id')) {			
-						Module.ccall('CallMenuCommand', 'number', ['number', 'number'], [this.id, data.id]);
+                        if (isSAGEInitialized) {
+                            Module.ccall('CallMenuCommand', 'number', ['number', 'number'], [this.id, data.id]);
+                        }
 						this.hide();
 					} else {
 						this.hide();
@@ -1356,18 +1317,15 @@ class ContextMenu {
         }
     }
 
-    show(x, y, show_overlay) {
+    show(left, right, top, bottom, show_overlay) {
         var menu = this.getMenuDom();
-        
-		menu.style.left = `${x}px`;
-        menu.style.top = `${y}px`;
         	
 		this.dom = menu;
 		this.main_dom = menu;
 			
 		if (show_overlay) {
 			var overlay = document.createElement('div');
-			overlay.className = 'sage_modal_overlay';
+            overlay.classList.add('sage_modal_overlay');
 			
             overlay.addEventListener('mousedown', e => {
                 e.stopPropagation();
@@ -1398,21 +1356,21 @@ class ContextMenu {
 		var margin = 0;
 		var menuWidth = menu.offsetWidth;
 		var menuHeight = menu.offsetHeight;
-		var left = x + margin;
-		var top = y + margin;    
-		if (left + menuWidth > document.documentElement.clientWidth) {
-			left = x - menuWidth - margin ;
+		var x = right + margin;
+		var y = top + margin;    
+		if (x + menuWidth > document.documentElement.clientWidth) {
+			x = left - menuWidth - margin ;
 		}
-		if (left < 0) {
-			left = margin;
+		if (x < 0) {
+			x = margin;
 		}
-		if (top + menuHeight > document.documentElement.clientHeight) {
-			top = y - menuHeight - margin;
+		if (y + menuHeight > document.documentElement.clientHeight) {
+			y = bottom - menuHeight - margin;
 		}
-		if (top < 0) {
-			top = margin;
+		if (y < 0) {
+			y = margin;
 		}
-		menu.setAttribute('style', 'top:' + top + 'px;' + 'left:' + left + 'px;');		
+		menu.setAttribute('style', 'top:' + y + 'px;' + 'left:' + x + 'px;');		
     }
 
     
@@ -1442,7 +1400,6 @@ function closeContextMenu(){
         CONTEXT_MENU.hideAll();
 		CONTEXT_MENU.uninstall();
         CONTEXT_MENU = null;
-        //console.log('The context menu closed');
 	}
 }
 
@@ -1464,7 +1421,9 @@ function openContextMenu(id, xy, jsonData, canvas_name){
                     isContextMenuOpening = true;
                     menu = new ContextMenu(container, menuObject, id);
                     menu.install();
-                    menu.show(xy.x / pixelRatio, xy.y / pixelRatio, true);
+                    const x = xy.x / pixelRatio;
+                    const y = xy.y / pixelRatio;
+                    menu.show(x, x, y, y, true);
                     CONTEXT_MENU = menu;
 
                     // Use a timeout to reset the flag after a short delay
@@ -1484,12 +1443,356 @@ function openContextMenu(id, xy, jsonData, canvas_name){
     }
 }
  
+function getSAGEImage(id, width, height) {
+    if (isSAGEInitialized) {
+        
+        var dataPtr = Module._malloc(id.length + 1);
+        Module.stringToUTF8(id, dataPtr, id.length + 1);
+
+        // Allocate memory for the length
+        var lengthPtr = Module._malloc(4);
+
+        // Call the function
+        var textPtr = Module.ccall('GetImage', 'number', ['number', 'number', 'number', 'number'], [dataPtr, width, height, lengthPtr]);
+
+        // Read the length
+        var length = Module.HEAP32[lengthPtr >> 2];
+
+        // Read the string from memory
+        var imageText = Module.UTF8ToString(textPtr, length);
+
+        // Free the allocated memory
+        Module._free(lengthPtr);
+        Module._free(textPtr);
+        Module._free(dataPtr);
+
+        if (imageText === "")
+            return null;
+
+        //console.log("Raw image data:", imageText);
+        const imageData = JSON.parse(imageText);
+        //console.log("Parsed image data:", imageData);
+        return imageData;
+    }
+
+    return "SAGE is not initialized";
+}
+
+function createSAGEImageElement(name) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas._imageName = name;
+    canvas._lastW = 0;
+    canvas._lastH = 0;
+    canvas._cachedImage = null;
+    canvas._selectionStyle = null;
+
+    function computeDefaultColorFromBackground() {
+        const bg = window.getComputedStyle(canvas.parentElement).backgroundColor;
+        const rgb = bg.match(/\d+/g)?.map(Number);
+        if (!rgb || rgb.length < 3) return [0, 0, 0];
+        const brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+        return brightness > 128 ? [0, 0, 0] : [255, 255, 255];
+    }
+
+    function drawImage() {
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.floor(rect.width);
+        const h = Math.floor(rect.height);
+        if (w === 0 || h === 0) return;
+
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+        }
+
+        if (canvas._lastW !== w || canvas._lastH !== h || !canvas._cachedImage) {
+            canvas._lastW = w;
+            canvas._lastH = h;
+            canvas._cachedImage = getSAGEImage(canvas._imageName, w, h);
+        }
+
+        const img = canvas._cachedImage;
+        if (!img) {
+            console.error("Failed to retrieve image data.");
+            return;
+        }
+
+        const { width, height, number_of_channels, pixels } = img;
+        const imageData = ctx.createImageData(width, height);
+        const data = imageData.data;
+
+        const defColor = computeDefaultColorFromBackground();
+
+        for (let i = 0, j = 0; i < pixels.length; i += number_of_channels, j += 4) {
+            if (number_of_channels === 1) {
+                if (pixels[i] < 0 || pixels[i] > 255)
+                    concole.log(pixels[i])
+
+                data[j] = defColor[0];
+                data[j + 1] = defColor[1];
+                data[j + 2] = defColor[2];
+                data[j + 3] = pixels[i];
+            } else {
+                data[j] = pixels[i];
+                data[j + 1] = pixels[i + 1];
+                data[j + 2] = pixels[i + 2];
+                data[j + 3] = number_of_channels === 4 ? pixels[i + 3] : 255;
+            }
+        }
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.putImageData(imageData, 0, 0);
+        canvas._selectionStyle = number_of_channels === 1 ? 'alpha' : 'rgb';
+    }
+
+    const resizeObserver = new ResizeObserver(drawImage);
+    resizeObserver.observe(canvas);
+
+    setTimeout(drawImage, 0);
+
+    canvas.redraw = drawImage;
+    return canvas;
+}
+
+function createSAGEIconSelector({ names, selected = null, iconSize = 48 }) {
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexWrap = 'wrap';
+    container.style.overflowY = 'auto';
+    container.style.maxHeight = '300px';
+    container.style.gap = '6px';
+    container.style.padding = '6px';
+
+    const iconWrappers = new Map();
+    let currentSelected = selected;
+
+    function updateSelection() {
+        for (const [name, wrapper] of iconWrappers.entries()) {
+            const canvas = wrapper.querySelector('canvas');
+            const isSelected = name === currentSelected;
+
+            if (!canvas._selectionStyle) continue;
+
+            if (canvas._selectionStyle === 'alpha') {
+                wrapper.style.background = isSelected ? '#007BFF' : 'transparent';
+                wrapper.style.border = '2px solid transparent';
+            } else {
+                wrapper.style.background = 'transparent';
+                wrapper.style.border = isSelected ? '2px solid #007BFF' : '2px solid transparent';
+            }
+
+            canvas._cachedImage = null;
+            canvas._lastW = 0;
+            canvas._lastH = 0;
+            canvas.redraw();
+        }
+    }
+
+    for (const name of names) {
+        const wrapper = document.createElement('div');
+        wrapper.style.width = `${iconSize}px`;
+        wrapper.style.height = `${iconSize}px`;
+        wrapper.style.boxSizing = 'border-box';
+        wrapper.style.cursor = 'pointer';
+        wrapper.style.border = '2px solid transparent';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.background = 'transparent';
+
+        const canvas = createSAGEImageElement(name);
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+
+        wrapper.appendChild(canvas);
+        wrapper.addEventListener('click', () => {
+            currentSelected = name;
+            updateSelection();
+        });
+
+        container.appendChild(wrapper);
+        iconWrappers.set(name, wrapper);
+    }
+
+    updateSelection();
+
+    container.getSelected = () => currentSelected;
+    container.setSelected = (name) => {
+        if (iconWrappers.has(name)) {
+            currentSelected = name;
+            updateSelection();
+        }
+    };
+
+    return container;
+} 
+
+function drawPatternLineOnCanvas(pattern, canvas, lineWidth) {
+    const ctx = canvas.getContext('2d');
+    const elementWidth = canvas.width;
+    const patternLength = pattern.length;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+    // Function to draw segments based on the pattern
+    for (let i = 0; i < elementWidth; i += lineWidth) {
+        if (pattern[Math.floor(i / lineWidth) % patternLength] === '1') {
+            ctx.fillRect(i, (canvas.height - lineWidth) / 2, lineWidth, lineWidth);
+        }
+    }
+}
+
+function RegisterLineStyleEditor() {
+
+    // Define patterns for each line style
+    const line_style_patterns = {
+        'Solid': '1111111111111111',
+        'Dash': '0111011101110111',
+        'Dot': '1010101010101010',
+        'Dash dot': '0101011101010111'
+    };
+    class LineStyleEditor extends JSONEditor.AbstractEditor {
+        build() {
+            super.build();
+
+            // Create a container div with schema type and path attributes
+            this.container.setAttribute('data-schematype', 'string');
+            this.container.setAttribute('data-schemapath', this.path);
+
+            // Create a form group div
+            this.formGroup = document.createElement('div');
+            this.formGroup.classList.add('form-group');
+
+            // Create a label for the dropdown
+            this.label = document.createElement('label');
+            this.label.setAttribute('for', this.path + 'lineStyle');
+            this.label.textContent = this.schema.title || 'Line Style';
+
+            // Create a custom dropdown container
+            this.dropdownContainer = document.createElement('div');
+            this.dropdownContainer.classList.add('linestyle-dropdown');
+
+            // Create a canvas to display the selected line style
+            this.selectedCanvas = document.createElement('canvas');
+            this.selectedCanvas.classList.add('linestyle-dropdown-selected');
+            this.selectedCanvas.height = 20; // Set canvas height
+            this.dropdownContainer.appendChild(this.selectedCanvas);
+
+            // Create a div for dropdown options
+            this.optionsContainer = document.createElement('div');
+            this.optionsContainer.classList.add('linestyle-dropdown-options');
+            this.optionsContainer.style.display = 'none'; // Initially hidden
+            this.dropdownContainer.appendChild(this.optionsContainer);
+
+            // Create a description for the dropdown
+            this.description = document.createElement('small');
+            this.description.classList.add('form-text');
+            this.description.setAttribute('id', this.path + 'lineStyle-description');
+            this.description.textContent = this.schema.description || 'Select a line style from the dropdown.';
+
+            // Append elements to the form group
+            this.formGroup.appendChild(this.label);
+            this.formGroup.appendChild(this.dropdownContainer);
+            this.formGroup.appendChild(this.description);
+
+            // Append form group to the container
+            this.container.appendChild(this.formGroup);
+
+            // Add options for each line style
+            Object.keys(line_style_patterns).forEach(style => {
+                const option = document.createElement('div');
+                option.classList.add('linestyle-dropdown-option');
+                option.dataset.value = style;
+
+                const optionCanvas = document.createElement('canvas');
+                optionCanvas.height = 20; // Set canvas height
+                optionCanvas.classList.add('linestyle-dropdown-option-canvas');
+                option.appendChild(optionCanvas);
+
+                this.optionsContainer.appendChild(option);
+
+                // Draw the pattern on the canvas
+                const drawOptionPattern = () => {
+                    optionCanvas.width = option.clientWidth - 10; // Adjust width for padding
+                    drawPatternLineOnCanvas(line_style_patterns[style], optionCanvas, 4);
+                };
+
+                // Initial draw
+                drawOptionPattern();
+
+                // Redraw on resize
+                new ResizeObserver(drawOptionPattern).observe(option);
+
+                option.addEventListener('click', () => {
+                    this.setValue(style);
+                    this.optionsContainer.style.display = 'none';
+                    this.onChange(true);
+                });
+            });
+
+            // Retrieve the initial value from the editor's data
+            const initialValue = this.getDefault() || 'Solid'; // Use default value from schema or 'Solid'
+            this.setValue(initialValue);
+            this.updateSelectedDisplay(initialValue);
+
+            // Toggle dropdown options on click
+            this.selectedCanvas.addEventListener('click', () => {
+                this.optionsContainer.style.display = this.optionsContainer.style.display === 'block' ? 'none' : 'block';
+            });
+        }
+
+        postBuild() {
+            super.postBuild();
+
+            // Set up resize observer for the selected canvas
+            const drawSelectedPattern = () => {
+                this.selectedCanvas.width = this.selectedCanvas.clientWidth; // Set canvas width dynamically
+                drawPatternLineOnCanvas(line_style_patterns[this.value], this.selectedCanvas, 4);
+            };
+
+            // Initial draw
+            drawSelectedPattern();
+
+            // Redraw on resize
+            new ResizeObserver(drawSelectedPattern).observe(this.selectedCanvas);
+        }
+
+        setValue(value) {
+            this.value = value;
+            this.updateSelectedDisplay(value);
+        }
+
+        getValue() {
+            return this.value;
+        }
+
+        updateSelectedDisplay(style) {
+            this.selectedCanvas.width = this.selectedCanvas.clientWidth; // Set canvas width dynamically
+            drawPatternLineOnCanvas(line_style_patterns[style], this.selectedCanvas, 4);
+        }
+    }
+
+    // Register the linestyle editor
+    JSONEditor.defaults.editors.lineStyleEditor = LineStyleEditor;
+
+    // Add resolver for lineStyle format
+    JSONEditor.defaults.resolvers.unshift(function (schema) {
+        if (schema.type === 'string' && schema.format === 'lineStyleFormat') {
+            return 'lineStyleEditor';
+        }
+    });
+} 
 // Flag to track if the mouse button is pressed inside the chart box
 let isSAGEInitialized = false;
 let sageDataCache = '';
 
+function onSAGEBeforeUnload() {
+	if (isSAGEInitialized) {
+		Module._OnUnload();
+		console.log('IdealGraphics module was unloaded');
+	}
+}
+
 function makeSAGECanvasDeaf(flag, canvas_name = '') {
-	//console.log('Chart-box mouse leave');
 	if (isSAGEInitialized) {
 		let value = 0;
 		if (flag)
@@ -1499,6 +1802,50 @@ function makeSAGECanvasDeaf(flag, canvas_name = '') {
 	}
 }
 
+function getAvailableSAGEFonts() {
+	const fontsToCheck = [
+		'Arial',
+		'Verdana',
+		'Times New Roman',
+		'Courier New',
+		'Georgia',
+		'Helvetica',
+		'Trebuchet MS',
+		'Impact',
+		'Comic Sans MS',
+		'Lucida Sans',
+		'Palatino Linotype',
+		'Tahoma',
+		'Geneva',
+		'Optima',
+		'Cambria',
+		'Garamond',
+		'Perpetua',
+		'Rockwell',
+		'Consolas',
+		'Monaco'
+	];
+	const availableFonts = [];
+
+	const canvas = document.createElement('canvas');
+	const context = canvas.getContext('2d');
+
+	// Set a baseline font
+	context.font = '72px sans-serif';
+	const baselineWidth = context.measureText('abcdefghijklmnopqrstuvwxyz').width;
+
+	fontsToCheck.forEach(fontName => {
+		// Set the test font
+		context.font = `72px ${fontName}, sans-serif`;
+		const testWidth = context.measureText('abcdefghijklmnopqrstuvwxyz').width;
+
+		if (testWidth !== baselineWidth) {
+			availableFonts.push(fontName);
+		}
+	});
+
+	return availableFonts;
+}
 //-------------------------------------------------------------------------------
 function createSAGECanvas(canvas_name, owner_id = '') {
 	// Create the container <div>
@@ -1742,14 +2089,14 @@ let prevY = 0;
 
 function createModalHeader() {
 	var header = document.createElement('div');
-	header.className = 'sage_modal_header';
+	header.classList.add('sage_modal_header');
 
 	var title = document.createElement('span');
-	title.className = 'sage_modal_title';
+	title.classList.add('sage_modal_title');
 	title.textContent = 'Set Content';
 
 	var closeButton = document.createElement('button');
-	closeButton.className = 'sage_close_btn';
+	closeButton.classList.add('sage_close_btn');
 	closeButton.setAttribute('onclick', 'closeModal()');
 
 	var closeIcon = document.createElement('img');
@@ -1765,7 +2112,7 @@ function createModalHeader() {
 
 function createModalBody() {
 	var body = document.createElement('div');
-	body.className = 'sage_modal_body';
+	body.classList.add('sage_modal_body');
 
 	var textArea = document.createElement('textarea');
 	textArea.className = 'sage_text_input';
@@ -1784,7 +2131,8 @@ function createModalBody() {
 
 function createModalContent() {
 	var modalContent = document.createElement('div');
-	modalContent.className = 'sage_modal_content sage_text_dialog_content';
+	modalContent.classList.add('sage_modal_content');
+	modalContent.classList.add('sage_text_dialog_content');
 	modalContent.appendChild(createModalHeader());
 	modalContent.appendChild(createModalBody());
 
@@ -1794,7 +2142,7 @@ function createModalContent() {
 function initializeTextDialog() {
 	var modal = document.createElement('div');
 	modal.id = 'sage_textDialog';
-	modal.className = 'sage_modal sage_text_dialog';
+	modal.classList.add('sage_modal sage_text_dialog');
 	modal.appendChild(createModalContent());
 
 	document.body.appendChild(modal);
@@ -2069,7 +2417,9 @@ function getSAGEClipboardText(id) {
 			Module.stringToUTF8(text, bufferPtr, bufferSize + 1);
 
 			// Call the WASM function to process the text data
-			var result = Module.ccall('setClipboardData', 'number', ['number', 'number'], [bufferPtr, id]);
+			if (isSAGEInitialized) {
+				Module.ccall('setClipboardData', 'number', ['number', 'number'], [bufferPtr, id]);
+			}
 
 			// Free the allocated memory in WASM when done
 			Module._free(bufferPtr);
@@ -2361,6 +2711,33 @@ function setSAGEData(text, add, threadId = self.threadId) {
 	return -1;
 }
 
+function saveSAGESettingsToLocalStorage(key, value) {
+	if (value === "") {
+		localStorage.removeItem(key);
+	}
+	else {
+		localStorage.setItem(key, value);
+	}
+}
+
+function loadSAGESettingsFromLocalStorage(key) {
+	const data = localStorage.getItem(key);
+	if (data === null) {
+		return null; // Return null if the key does not exist
+	}
+	return data;
+}
+
+// Function to save data when the page is about to be closed
+window.addEventListener('beforeunload', function (event) {
+	// Example: Save some data to localStorage
+	onSAGEBeforeUnload();
+
+	// Optionally, you can set a message to be displayed to the user
+	// Note: Modern browsers may not display this message
+	//event.returnValue = 'Are you sure you want to leave?';
+});
+
 function loadData(text, add){
 	return setSAGEData(text, add);
 }
@@ -2446,10 +2823,10 @@ function sendReq(site, machine, section) {
     fetch(req, {mode: 'no-cors'});
 }
 
-function onSAGEIntitialized() {
+function onSAGEInitialized() {
 }
 
-function onSAGEIntitializedRoutine ()
+function onSAGEInitializedRoutine ()
 {
 	// Start async data loading
 	loadSAGEContent().then(() => {
@@ -2458,12 +2835,12 @@ function onSAGEIntitializedRoutine ()
 		console.error('************* Async loading failed:', error);		
 	});
 
-	onSAGEIntitialized();	
+	onSAGEInitialized();	
 }
 
 // Assign the function to the global window object
-window.onModuleIntitialized = onSAGEIntitialized; 
-class CMessageBox extends CWindow 
+window.onModuleIntitialized = onSAGEInitialized; 
+class CMessageBox extends CSAGEWindow 
 {
     settings = {
         text: "",
@@ -2553,25 +2930,28 @@ class CMessageBox extends CWindow
     }
 
     render() {
-        var messageBox = super.render();
-        messageBox.className = 'sage_message_box';
-
+        var content = super.render();
+        content.classList.add('sage_dialog_content');
+        content.classList.add('sage_message_box');
+        
         {
             var div = document.createElement('div');
-            div.className = 'sage_messagebox_text_area';
+            div.classList.add('sage_messagebox_text_area');
             div.innerText = this.settings.text;
-            messageBox.appendChild(div);
+            content.appendChild(div);
         }
 
         {
             var div = document.createElement('div');
-            div.className = 'sage_messagebox_button_row';
+            div.classList.add('sage_button_row');
 
             if (this.settings.cancelButton.show) {//cancelButton
                 var button = document.createElement('button');
                 button.id = 'sage_messagebox_cancel_button';
                 button.type = 'button';
-                button.className = 'sage_messagebox_button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText = this.settings.cancelButton.label;
                 div.appendChild(button);
             }
@@ -2580,7 +2960,9 @@ class CMessageBox extends CWindow
                 var button = document.createElement('button');
                 button.id = 'sage_messagebox_ok_button';
                 button.type = 'button';
-                button.className = 'sage_messagebox_button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText = this.settings.okButton.label;
                 div.appendChild(button);
             }
@@ -2589,7 +2971,9 @@ class CMessageBox extends CWindow
                 var button = document.createElement('button');
                 button.id = 'sage_messagebox_no_button';
                 button.type = 'button';
-                button.className = 'sage_messagebox_button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText = this.settings.noButton.label;
                 div.appendChild(button);
             }
@@ -2598,15 +2982,17 @@ class CMessageBox extends CWindow
                 var button = document.createElement('button');
                 button.id = 'sage_messagebox_yes_button';
                 button.type = 'button';
-                button.className = 'sage_messagebox_button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
                 button.innerText = this.settings.yesButton.label;
                 div.appendChild(button);
             }
 
-            messageBox.appendChild(div);
+            content.appendChild(div);
         }
 
-        return messageBox;
+        return content;
     }
 }
 
@@ -2626,7 +3012,7 @@ function openMessageBox(id, title, text, style, canvas_name) {
             messageboxContent.settings.okButton.show = style.includes('ok');
             messageboxContent.settings.cancelButton.show = style.includes('cancel');
 
-            MESSAGE_BOX = new CModalDialog(messageboxContent);
+            MESSAGE_BOX = new CSAGEModalDialog(messageboxContent, 'sage_message_box_content_id');
             MESSAGE_BOX.modal_settings.title = title;
             MESSAGE_BOX.add(container, 'sage_message_box_dlg');
 
@@ -2640,10 +3026,346 @@ function closeMessageBox(e){
         removeListener(MESSAGE_BOX.getElement(), 'window:close', closeMessageBox);
 
         MESSAGE_BOX.remove();
-        Module.ccall('MessageBox', 'number', ['number', 'string'], [MESSAGE_BOX.content_window.modifierId, MESSAGE_BOX.content_window.result, true]);
+        if (isSAGEInitialized) {
+            Module.ccall('MessageBox', 'number', ['number', 'string'], [MESSAGE_BOX.content_window.modifierId, MESSAGE_BOX.content_window.result]);
+        }
         MESSAGE_BOX = null;
     }
 } 
+let jsonEditorLoaded = false;
+
+function loadEditScript(callback) {
+    if (!jsonEditorLoaded) {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js';
+
+        script.onload = function () {
+            jsonEditorLoaded = true;
+            RegisterLineStyleEditor();
+            callback();
+        };
+
+        document.head.appendChild(script);
+    } else {
+        callback();
+    }
+}
+
+class CSettingsDialog extends CSAGEWindow {
+
+    settings = {
+        cancelButton:
+        {
+            show: true,
+            label: 'Cancel'
+        },
+
+        applyButton:
+        {
+            show: true,
+            label: 'OK'
+        }
+    };
+
+    constructor(modifierId, jsonSchema, jsonData) {
+
+        super();
+
+        this.modifierId = modifierId;
+
+        this.settingsSchema = JSON.parse(jsonSchema);
+        this.settingsData = JSON.parse(jsonData);
+        this.currentEditor = null;
+        this.content = null;
+    }
+
+    render() {
+        //the whole setting dialog
+        const content = document.createElement('div');
+        content.classList.add('sage_dialog_content');
+
+        const content_row = document.createElement('div');
+        content_row.classList.add('sage_settings_content_row');
+        content.appendChild(content_row);
+
+        //scrollable editor holder
+        const sidebarHolder = document.createElement('div');
+        sidebarHolder.classList.add('sage_settings_holder');
+        sidebarHolder.classList.add('sage_settings_holder_left');
+        content_row.appendChild(sidebarHolder);
+
+        //sidebar
+        const sidebar = document.createElement('div');
+        sidebar.classList.add('sage_settings_sidebar');
+        sidebar.classList.add('bg-light');
+        sidebar.classList.add('card');
+        sidebar.classList.add('mb-3');//bottom margin
+        sidebarHolder.appendChild(sidebar);
+
+        //scrollable editor holder
+        const editorHolder = document.createElement('div');
+        editorHolder.classList.add('sage_settings_holder');
+        editorHolder.classList.add('sage_settings_holder_right');
+        content_row.appendChild(editorHolder);
+
+        // Add buttons if needed
+        if (this.settings.cancelButton.show || this.settings.applyButton.show) {
+            //row with buttons
+            const buttonRow = document.createElement('div');
+            buttonRow.classList.add('sage_button_row');
+
+            if (this.settings.cancelButton.show) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
+                button.innerText = this.settings.cancelButton.label;
+                button.onclick = function () {
+                    closeSettingsDialog('cancel');
+                };
+                buttonRow.appendChild(button);
+            }
+
+            if (this.settings.applyButton.show) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn');
+                button.classList.add('btn-outline-dark');
+                button.classList.add('bg-light');
+                button.innerText = this.settings.applyButton.label;
+                button.onclick = function () {
+                    closeSettingsDialog('ok');
+                };
+                buttonRow.appendChild(button);
+            }
+
+            content.appendChild(buttonRow);
+        }
+
+        this.content = content;
+
+        return content;
+    }
+
+    showSubEditor(key) {
+        const editorHolder = document.querySelector('.sage_settings_holder_right');
+        const sidebar = document.querySelector('.sage_settings_sidebar');
+
+        // Update sidebar selection
+        for (const section of sidebar.querySelectorAll('.sage_settings_sidebar_item')) {
+            section.classList.toggle('active', section.dataset.key === key);
+        }
+
+        // Destroy previous editor
+        if (this.currentEditor) {
+            this.currentEditor.destroy();
+            editorHolder.innerHTML = '';
+        }
+
+
+        // Determine if the key is for a top-level or second-level property
+        const keys = key.split('.');
+        let subSchema, subData;
+        if (keys.length === 1) {
+            subSchema = this.settingsSchema.properties[keys[0]];
+            subData = this.settingsData[keys[0]];
+        } else if (keys.length === 2) {
+            subSchema = this.settingsSchema.properties[keys[0]].properties[keys[1]];
+            subData = this.settingsData[keys[0]][keys[1]];
+        }
+               
+        //console.log(subSchema);        
+        //console.log(subData);
+
+        if (subSchema && subData) {
+            // Initialize JSON Editor
+            this.currentEditor = new JSONEditor(editorHolder, {
+                schema: subSchema,
+                startval: subData,
+                theme: 'bootstrap4', //Specifies the theme to be used by the editor. Common themes include bootstrap3, bootstrap4, foundation, and jqueryui
+                iconlib: 'fontawesome5',//Specifies the icon library to be used. Options include fontawesome4, fontawesome5, and jqueryui.
+                disable_edit_json: true, // Disable editing the JSON structure directly
+                disable_properties: true, // Disable changing the type of properties
+                //disable_array_add: true,
+                //disable_array_delete: true,
+                //disable_array_reorder: false,
+                object_layout: 'grid',//Specifies the layout of object properties. Options include normal and grid.
+                array_layout: 'table',//Specifies the layout of array items. Options include normal, table and grid.
+                template: 'default',//Specifies a template engine to use for rendering.Options include default, handlebars, and mustache
+                show_only_visible: true,         // Optional UI improvement
+                remove_empty_properties: true,   // Removes hidden fields on submit if empty
+            });
+
+            this.currentEditor.on('change', () => {
+                if (keys.length === 1) {
+                    this.settingsData[keys[0]] = this.currentEditor.getValue();
+                } else if (keys.length === 2) {
+                    this.settingsData[keys[0]][keys[1]] = this.currentEditor.getValue();
+                }
+            });
+        }
+    }
+
+    onAddElement() {
+        super.onAddElement();
+
+        // Allow scrolling inside the content row
+        var contentRow = this.content.querySelector('.sage_settings_content_row');
+        contentRow.addEventListener('wheel', function (e) {
+            e.stopPropagation(); // Allow scroll event to propagate only within the content row
+        }, { passive: false });
+
+
+        loadEditScript(() => {
+            const sidebar = document.querySelector('.sage_settings_sidebar');
+            const row = document.querySelector('.sage_settings_content_row');
+            const topKeys = Object.keys(this.settingsSchema.properties);
+
+            // Check if there is only one top-level key
+            let topKeyCount = 0;
+            let secondKeyCount = 0;
+            // Populate sidebar with top-level and second-level property names
+            topKeys.forEach(topKey => {
+                const subProperties = this.settingsSchema.properties[topKey].properties;
+                const subKeys = subProperties ? Object.keys(subProperties) : [];
+
+                // Only add top-level item if it has sub-properties
+                if (subProperties && subKeys.length > 0) {
+                    topKeyCount += 1;
+                    secondKeyCount += subKeys.length;
+                }
+            });
+
+            // Populate sidebar with top-level and second-level property names
+            topKeys.forEach(topKey => {
+                const subProperties = this.settingsSchema.properties[topKey].properties;
+                const subKeys = subProperties ? Object.keys(subProperties) : [];
+
+                // Only add top-level item if it has sub-properties
+                if (subProperties && subKeys.length > 0) {
+
+                    if (topKeyCount > 1) {
+                        const topItem = document.createElement('div');
+                        topItem.textContent = this.settingsSchema.properties[topKey].title || topKey;
+                        topItem.dataset.key = topKey;
+                        topItem.classList.add('sage_settings_sidebar_item');
+                        topItem.classList.add('sage_settings_sidebar_item_top');
+                        sidebar.appendChild(topItem);
+                    }
+
+                    // Add second-level properties
+                    subKeys.forEach(subKey => {
+                        const subItem = document.createElement('div');
+                        subItem.textContent = subProperties[subKey].title || subKey;
+                        subItem.dataset.key = `${topKey}.${subKey}`; // Use dot notation for sub-level keys
+                        subItem.classList.add('sage_settings_sidebar_item');
+                        subItem.classList.add('sage_settings_sidebar_item_sub');
+                        if (topKeyCount > 1) {
+                            subItem.classList.add('sage_sidebar_item_sub');
+                        }
+                        
+                        subItem.onclick = () => {
+                            this.showSubEditor(`${topKey}.${subKey}`);
+                        };
+                        sidebar.appendChild(subItem);
+                    });
+                }
+            });
+
+            // Hide the sidebar if there is only one top key and one second-level key
+            if (topKeyCount < 2 && secondKeyCount < 2) {
+                sidebar.style.display = 'none';
+            } else {
+                row.classList.add('sage_gap');
+            }
+
+            // Define the initial selection
+            {
+                // Default: Show first second-level section if available
+                let firstSecondLevelKey = null;
+
+                // Iterate over top-level properties
+                topKeys.some(topKey => {
+                    const subProperties = this.settingsSchema.properties[topKey].properties;
+
+                    // Check if there are sub-properties
+                    if (subProperties && Object.keys(subProperties).length > 0) {
+                        // Get the first sub-property key
+                        const firstSubKey = Object.keys(subProperties)[0];
+
+                        // Construct the full key using dot notation
+                        firstSecondLevelKey = `${topKey}.${firstSubKey}`;
+
+                        // Break the loop by returning true
+                        return true;
+                    }
+
+                    // Continue the loop by returning false
+                    return false;
+                });
+
+                // If a second-level key was found, show the corresponding sub-editor
+                if (firstSecondLevelKey) {
+                    this.showSubEditor(firstSecondLevelKey);
+                }
+            }
+        });
+    }
+}
+
+SETTINGS_DIALOG = null;
+
+// Function to open the settings dialog
+function openSettingsDialog(id, title, jsonData, jsonSchema) {
+    if (!SETTINGS_DIALOG) {
+        var container = document.body;
+        if (container) {
+            console.log("Settings dialog input:")
+            console.log(jsonData);
+
+            SETTINGS_DIALOG = new CSAGEModalDialog(new CSettingsDialog(id, jsonSchema, jsonData), 'sage_settings_content_id');
+            SETTINGS_DIALOG.modal_settings.title = title;
+            SETTINGS_DIALOG.add(container, 'sage_settings_dialog');            
+        }
+
+        addListener(SETTINGS_DIALOG.getElement(), 'window:close', cancelSettingsDialog);
+    }
+}
+
+// Function to close the settings dialog and send data back to C++
+function closeSettingsDialog(result) {
+    if (SETTINGS_DIALOG) {
+        if (result === 'ok') {
+                        
+            const modifiedJsonData = JSON.stringify(SETTINGS_DIALOG.content_window.settingsData);
+
+            console.log("Settings dialog output:")
+            console.log(modifiedJsonData)
+
+            // Call the C++ function to handle the modified JSON data
+            if (isSAGEInitialized) {
+                result = Module.ccall('ModifySettings', 'number', ['number', 'string'], [SETTINGS_DIALOG.content_window.modifierId, modifiedJsonData]);
+
+                if (result == 0) {
+                    return false;
+                }
+            }
+        }
+
+        removeListener(SETTINGS_DIALOG.getElement(), 'window:close', cancelSettingsDialog);
+        SETTINGS_DIALOG.remove();
+        SETTINGS_DIALOG = null;
+    }
+
+    return true;
+}
+
+function cancelSettingsDialog() {
+    closeSettingsDialog('cancel');
+}
+ 
 function showTooltip(x, y, text, canvas_name) {
 	
 	const pixelRatio = window.devicePixelRatio || 1;
@@ -2651,7 +3373,7 @@ function showTooltip(x, y, text, canvas_name) {
 	y = y / pixelRatio;
 	
     var tooltipWrap = document.createElement("div"); //creates div
-    tooltipWrap.className = 'sage_tooltip'; //adds class
+    tooltipWrap.classList.add('sage_tooltip'); //adds class
     const rows = text.split(/\r?\n/);
     for (var i = 0; i < rows.length; ++i) {
         tooltipWrap.appendChild(document.createTextNode(rows[i])); //add the text node to the newly created div.
@@ -2688,11 +3410,9 @@ function showTooltip(x, y, text, canvas_name) {
     tooltipWrap.setAttribute('style', 'top:' + top + 'px;' + 'left:' + left + 'px;');
 }
 
-function hideTooltip()
-{
+function hideTooltip() {
     var selector = document.querySelector(".sage_tooltip");
-    if (selector)
-    {
+    if (selector) {
         selector.remove();
     }
 } 

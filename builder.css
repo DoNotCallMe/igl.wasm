@@ -11,18 +11,18 @@ body, html {
     box-sizing: border-box;
 }
 
-.container {
+.SAGE_chart_collection {
     display: flex;
     height: 100%;
-    padding: 10px;
-    gap: 10px;
+    padding: 1rem;
+    gap: 1rem;
     box-sizing: border-box;
 }
 
 .button-column {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 1rem;
     box-sizing: border-box;
     width: 40px; /* Allocate space for the button column */
 }
