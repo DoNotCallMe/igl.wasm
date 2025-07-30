@@ -1122,6 +1122,10 @@ class ContextMenu {
                 imageCanvas.classList.add('sage_checked');
             }
 
+            if (data.hasOwnProperty('disabled') && data.disabled) {
+                imageCanvas.classList.add('sage_disabled');
+            }
+
             item_mark_container.appendChild(imageCanvas);
         } else {
             const item_mark = document.createElement('span');
@@ -1130,6 +1134,10 @@ class ContextMenu {
 
             if (!data.hasOwnProperty('checked') || !data.checked) {
                 item_mark.style.display = 'none';
+            }
+
+            if (data.hasOwnProperty('disabled') && data.disabled) {
+                item_mark.classList.add('sage_disabled');
             }
 
             item_mark_container.appendChild(item_mark);
@@ -1495,6 +1503,13 @@ function createSAGEImageElement(name) {
         return brightness > 128 ? [0, 0, 0] : [255, 255, 255];
     }
 
+    function computeBaseColorFromText() {
+        const color = window.getComputedStyle(canvas.parentElement).color;
+        const rgb = color.match(/\d+/g)?.map(Number);
+        if (!rgb || rgb.length < 3) return [0, 0, 0];
+        return rgb; // Directly use the RGB values from the text color
+    }
+
     function drawImage() {
         const rect = canvas.getBoundingClientRect();
         const w = Math.floor(rect.width);
@@ -1522,7 +1537,7 @@ function createSAGEImageElement(name) {
         const imageData = ctx.createImageData(width, height);
         const data = imageData.data;
 
-        const defColor = computeDefaultColorFromBackground();
+        const defColor = computeBaseColorFromText();// computeDefaultColorFromBackground();
 
         for (let i = 0, j = 0; i < pixels.length; i += number_of_channels, j += 4) {
             if (number_of_channels === 1) {
@@ -3257,19 +3272,22 @@ class CSettingsDialog extends CSAGEWindow {
 
                     // Add second-level properties
                     subKeys.forEach(subKey => {
-                        const subItem = document.createElement('div');
-                        subItem.textContent = subProperties[subKey].title || subKey;
-                        subItem.dataset.key = `${topKey}.${subKey}`; // Use dot notation for sub-level keys
-                        subItem.classList.add('sage_settings_sidebar_item');
-                        subItem.classList.add('sage_settings_sidebar_item_sub');
-                        if (topKeyCount > 1) {
-                            subItem.classList.add('sage_sidebar_item_sub');
+                        // Check if the subKey exists in subProperties
+                        if (subProperties[subKey]) {
+                            const subItem = document.createElement('div');
+                            subItem.textContent = subProperties[subKey].title || subKey;
+                            subItem.dataset.key = `${topKey}.${subKey}`; // Use dot notation for sub-level keys
+                            subItem.classList.add('sage_settings_sidebar_item');
+                            subItem.classList.add('sage_settings_sidebar_item_sub');
+                            if (topKeyCount > 1) {
+                                subItem.classList.add('sage_sidebar_item_sub');
+                            }
+
+                            subItem.onclick = () => {
+                                this.showSubEditor(`${topKey}.${subKey}`);
+                            };
+                            sidebar.appendChild(subItem);
                         }
-                        
-                        subItem.onclick = () => {
-                            this.showSubEditor(`${topKey}.${subKey}`);
-                        };
-                        sidebar.appendChild(subItem);
                     });
                 }
             });
@@ -3322,8 +3340,12 @@ function openSettingsDialog(id, title, jsonData, jsonSchema) {
     if (!SETTINGS_DIALOG) {
         var container = document.body;
         if (container) {
+
             console.log("Settings dialog input:")
             console.log(jsonData);
+
+            console.log("Settings dialog schema:")
+            console.log(jsonSchema);
 
             SETTINGS_DIALOG = new CSAGEModalDialog(new CSettingsDialog(id, jsonSchema, jsonData), 'sage_settings_content_id');
             SETTINGS_DIALOG.modal_settings.title = title;
