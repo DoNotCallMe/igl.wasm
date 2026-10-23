@@ -1,0 +1,173 @@
+.sage-terminal-button {
+	border: 1px solid #3b82f6;
+	border-radius: 6px;
+	background: #3b82f6;
+	color: #ffffff;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+	.sage-terminal-button:hover {
+		background: #2563eb;
+		border-color: #2563eb;
+	}
+
+	.sage-terminal-button:focus-visible {
+		outline: 2px solid #9db6d8;
+		outline-offset: 1px;
+	}
+
+.sage-terminal-button--compact {
+	min-height: 30px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 6px 10px;
+	font-size: 13px;
+	line-height: 1;
+}
+
+.sage-terminal-button__icon {
+	font-family: Consolas, "Courier New", monospace;
+	font-size: 12px;
+}
+
+.sage-modal__dialog--terminal {
+	width: min(1100px, 92vw);
+	height: min(760px, 92vh);
+}
+
+.sage-modal__body--terminal {
+	padding: 16px;
+	background: #f8fafc;
+}
+
+.sage-terminal {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.sage-terminal__query-layout {
+	display: flex;
+	align-items: stretch;
+	gap: 12px;
+}
+
+.sage-terminal__query-panel {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sage-terminal__label {
+	font-size: 13px;
+	font-weight: 600;
+	color: #3f4854;
+}
+
+.sage-terminal__query {
+	flex: 1 1 auto;
+	min-height: 120px;
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid #cfd6de;
+	border-radius: 6px;
+	box-sizing: border-box;
+	font-size: 13px;
+	line-height: 1.5;
+	resize: vertical;
+	background: #ffffff;
+	color: #111827;
+}
+
+	.sage-terminal__query:focus-visible {
+		outline: 2px solid #9db6d8;
+		outline-offset: 1px;
+	}
+
+.sage-terminal__styles {
+	flex: 0 0 300px;
+	min-width: 300px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sage-terminal__section-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: #3f4854;
+}
+
+.sage-terminal__styles-list {
+	flex: 1 1 auto;
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid #cfd6de;
+	border-radius: 6px;
+	background: #ffffff;
+	min-height: 120px;
+	max-height: 220px;
+	overflow: auto;
+}
+
+.sage-terminal__style-item {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 8px;
+	font-size: 13px;
+	line-height: 1.35;
+	color: #3f4854;
+	cursor: pointer;
+}
+
+.sage-terminal__style-checkbox {
+	margin: 2px 0 0;
+}
+
+.sage-terminal__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.sage-terminal__result {
+	flex: 1 1 auto;
+	min-height: 0;
+	border: 1px solid #cfd6de;
+	border-radius: 6px;
+	overflow: hidden;
+	background: #ffffff;
+}
+
+#sageTerminalResult {
+	display: none;
+}
+
+.sage-terminal__result .CodeMirror {
+	width: 100% !important;
+	height: 100% !important;
+	font-size: 13px;
+}
+
+.sage-terminal__result .CodeMirror-scroll {
+	min-height: 100%;
+}
+
+@media (max-width: 900px) {
+	.sage-terminal__query-layout {
+		flex-direction: column;
+	}
+
+	.sage-terminal__styles {
+		flex: 0 0 auto;
+		min-width: 0;
+	}
+}

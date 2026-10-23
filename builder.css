@@ -1,112 +1,427 @@
 body {
-    background-color: lightgrey !important;
-    overflow: hidden; /* Prevent scrolling */
-}
-
-body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
     width: 100%;
-    box-sizing: border-box;
-}
-
-.SAGE_chart_collection {
-    display: flex;
     height: 100%;
-    padding: 1rem;
-    gap: 1rem;
+    min-height: 100vh;
+    position: relative;
+    background-color: #edf2f8;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    overflow: hidden;
+}
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image: linear-gradient(rgba(71, 85, 105, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(71, 85, 105, 0.16) 1px, transparent 1px);
+        background-size: 32px 32px;
+    }
+
+    body.sage-modal-open {
+        overflow: hidden;
+    }
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
-.button-column {
+.builder-shell {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.builder-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 20px;
+    width: 100%;
+    height: calc(100vh - 40px);
+    min-height: 0;
+}
+
+.builder-sidebar {
+    flex: 0 0 520px;
+    min-width: 520px;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    box-sizing: border-box;
-    width: 40px; /* Allocate space for the button column */
+    gap: 20px;
+    min-height: 0;
 }
 
-.button-column button {
-    border: 1px solid gray;
-    background-color: white;
-    color: white;
-    border-radius: 20%; /* Make the button round */
-    width: 40px;
-    height: 40px;
-    font-size: 12px;
+.builder-window {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid #6b7f9e;
+    border-radius: 6px;
+    background-color: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.builder-window--selector {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+    .builder-window--selector .builder-window-body {
+        overflow: visible;
+    }
+
+.sage-dropdown {
+    position: relative;
+    width: 100%;
+    z-index: 30;
+}
+
+.sage-dropdown__menu[hidden] {
+    display: none !important;
+}
+
+.sage-dropdown__toggle {
+    width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid #cfd6de;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #111827;
     cursor: pointer;
-    text-align: center;
-    background-size: 60%; /* Adjust the size of the background image */
-    background-position: center;
-    background-repeat: no-repeat;
+    box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.04);
 }
 
-#overlayButton {
-    background-image: url('overlay.svg');
+.sage-dropdown__current-icon {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
-#tableButton {
-    background-image: url('table.svg');
+.sage-dropdown__item-icon {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
-#canvasButton {
-    background-image: url('canvas.svg');
+.sage-dropdown__sage-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
 }
 
-.editor-holder, .chart-holder {
-    flex: 1;
+.sage-dropdown__arrow {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.sage-dropdown__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 20;
     display: flex;
     flex-direction: column;
-    border: 1px solid black;
-    background-color: white;
-    box-sizing: border-box;
-    overflow: hidden; /* Ensure content does not overflow */
+    gap: 6px;
+    max-height: 320px;
+    padding: 8px;
+    overflow: auto;
+    border: 1px solid #cfd6de;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.16), 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.sage-dropdown__item {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #3f4854;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+    .sage-dropdown__item:hover {
+        background: #f8fafc;
+        border-color: #d5dbe3;
+    }
+
+    .sage-dropdown__item.is-selected {
+        background: #dbeafe;
+        border-color: #60a5fa;
+        color: #1d4ed8;
+    }
+
+    .sage-dropdown__item:focus-visible {
+        outline: 2px solid #9db6d8;
+        outline-offset: 1px;
+    }
+
+.sage-dropdown__item-text {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sage-dropdown__value {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.builder-window--editor {
+    flex: 1 1 auto;
+}
+
+.builder-window-body {
+    padding: 16px;
+    background: #ffffff;
+}
+
+.builder-window-body--editor {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
 }
 
 .chart-holder {
-    padding: 5px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
 }
 
+.sage-window-header {
+    flex: 0 0 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 8px 0 12px;
+    color: #3f4854;
+    background: #f1f3f5;
+    border-bottom: 1px solid #d5dbe3;
+    user-select: none;
+}
+
+.sage-window-title {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3f4854;
+}
+
+.sage-window-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sage-window-button {
+    width: 30px;
+    height: 30px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #4b5563;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .sage-window-button:hover {
+        background: #e7ebf0;
+        border-color: #cfd6de;
+    }
+
+    .sage-window-button:focus-visible {
+        outline: 2px solid #9db6d8;
+        outline-offset: 1px;
+    }
+
+.sage-action-button {
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+    .sage-action-button:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .sage-action-button:focus-visible {
+        outline: 2px solid #9db6d8;
+        outline-offset: 1px;
+    }
+
+.sage-action-button--compact {
+    min-height: 30px;
+    padding: 6px 10px;
+    font-size: 13px;
+    line-height: 1;
+}
+
+    
 #jsonEditor {
-    flex: 1;
-    border: none;
-    resize: none;
-    overflow-y: auto;
-}
-
-#mySAGEChart {
-    flex: 1;
-    border: none;
-    overflow: auto;
+    display: none;
 }
 
 .CodeMirror {
-    width: 100% !important; /* Ensure CodeMirror takes full width */
-    height: 100% !important; /* Ensure CodeMirror takes full height */
+    width: 100% !important;
+    height: 100% !important;
+    font-size: 13px;
 }
 
-.CodeMirror-vscrollbar, .CodeMirror-hscrollbar, .CodeMirror-scrollbar-filler {
-    z-index: 0 !important;
+.CodeMirror-vscrollbar,
+.CodeMirror-hscrollbar,
+.CodeMirror-scrollbar-filler,
+.CodeMirror-gutter-filler {
+    z-index: 6 !important;
 }
 
-#buildButton {
-    align-self: center;
-    border: 2px solid gray;
-    background-color: white;
-    color: white;
-    border-radius: 50%; /* Make the button round */
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-    cursor: pointer;
-    background-image: url('build.svg');
-    background-size: 60%; /* Adjust the size of the background image */
-    background-position: center;
-    background-repeat: no-repeat;
+.CodeMirror-scroll {
+    overflow: auto !important;
 }
 
-#exampleSelector {
-    margin: 10px; /* Add some space between the dropdown and the editor */
+.sage-chart-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px;
+    box-sizing: border-box;
+    background-color: #ffffff;
 }
 
+.SAGE_chart,
+#mySAGEChart {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.chart-error {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 0 12px 12px;
+    color: #b00020;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow: auto;
+}
+
+.sage-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+    .sage-modal.is-open {
+        display: flex;
+    }
+
+.sage-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.42);
+}
+
+.sage-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: 95vw;
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #1d3763;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.sage-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    background: #ffffff;
+}
+
+    .sage-modal__body .SAGE_chart {
+        width: 100%;
+        height: 100%;
+    }
+
+@media (max-width: 1200px) {
+    .builder-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 40px);
+    }
+
+    .builder-sidebar {
+        flex: 0 0 auto;
+        min-width: 0;
+    }
+
+    .chart-holder {
+        min-height: 420px;
+    }
+}
